@@ -1,0 +1,302 @@
+{
+  "schemaVersion": 1,
+  "milestone": "M4",
+  "device": {
+    "name": "Novation Twitch",
+    "vendorID": "0x1235",
+    "productID": "0x0018"
+  },
+  "scope": {
+    "mode": "basic",
+    "advancedModeUsed": false,
+    "decision": "The documented basic mode provides individual button LEDs, performance-pad LEDs, FX LEDs, meters, and touchstrip light-guide output. M4 has no established requirement for advanced mode.",
+    "transport": {
+      "interfaceNumber": 1,
+      "alternateSetting": 0,
+      "endpointAddress": "0x03",
+      "direction": "out",
+      "transferType": "interrupt",
+      "maximumPacketSizeSource": "physical USB descriptor; derive at runtime",
+      "measuredMaximumPacketSizeBytes": 8
+    }
+  },
+  "evidenceClasses": {
+    "documented": "Novation Twitch Programmer's Reference supplied in docs/",
+    "historical": "Mixxx 2.3.6 Twitch mapping under reference/mixxx/2.3.6/",
+    "currentMixxx": "Mixxx 2.5.6 installed controller API and current controls documentation",
+    "physical": "Requires a captured M4 observation unless explicitly marked measured"
+  },
+  "velocityEncoding": {
+    "singleColor": {
+      "documented": "0 through 16 selects intensity; 0 is off, 16 is full; values above 16 are full intensity",
+      "off": 0,
+      "full": 16
+    },
+    "bicolor": {
+      "documented": "low four bits select intensity 0 through 15; color offsets are red 0x00, amber 0x40, green 0x70",
+      "off": 0,
+      "fullRed": 15,
+      "fullAmber": 79,
+      "fullGreen": 127,
+      "historicalInactiveDimRed": 1,
+      "historicalInactiveDimAmber": 65,
+      "historicalInactiveDimGreen": 113,
+      "m4FunctionalPolicy": "Use documented off value 0 for inactive and documented full-color values for active. Historical dim-inactive styling is deferred polish."
+    }
+  },
+  "controllerV1Closure": {
+    "date": "2026-08-11",
+    "mixxxOutputConnections": 101,
+    "normalDeckStatuses": ["0x97", "0x98"],
+    "alternateShiftPageStatuses": ["0x99", "0x9A"],
+    "alternatePagePolicy": "Mirror stateful PLAY, PFL, FADER FX, quantize, keylock, sync, loop and hot-cue feedback. Map alternate-page CUE to reverse, ADJUST/SLIP to slip_enabled, and AUTOLOOP pads to the documented shifted loop sizes.",
+    "physicalResult": "Deck A/B state buttons, deck-B parity, normal and alternate hot-cue state, AUTOLOOP state, MASTER FX assignment/enable, momentary beatgrid ADJUST and persistent SHIFT+SLIP all passed live visual verification.",
+    "evidence": "control-inventory/controller-v1-led-verification.json"
+  },
+  "outputs": [
+    {
+      "id": "deck-a-play-led",
+      "physicalControl": "left PLAY button",
+      "documentedMessage": {"status": "0x97", "note": 23, "activeVelocity": 127, "inactiveVelocity": 0},
+      "ledType": "bicolor",
+      "activeColor": "green",
+      "mixxx": {"group": "[Channel1]", "control": "play_indicator"},
+      "historical": "Mapped to play with full green 0x7f active and dim green 0x71 inactive.",
+      "validation": "M4 Stage A known-LED test and Stage B Mixxx feedback",
+      "physicalObservation": "2026-08-10 M4 Stage A: 0x97 0x17 0x7f illuminated left PLAY green; 0x97 0x17 0x00 extinguished it. Mixxx-driven state was also confirmed."
+    },
+    {
+      "id": "deck-b-play-led",
+      "physicalControl": "right PLAY button",
+      "documentedMessage": {"status": "0x98", "note": 23, "activeVelocity": 127, "inactiveVelocity": 0},
+      "ledType": "bicolor",
+      "activeColor": "green",
+      "mixxx": {"group": "[Channel2]", "control": "play_indicator"},
+      "historical": "Mapped to play with full green 0x7f active and dim green 0x71 inactive.",
+      "validation": "M4 Stage B Mixxx feedback",
+      "physicalObservation": "2026-08-11 controller-v1 pass: deck-B PLAY and its alternate-page mirror followed Mixxx physically."
+    },
+    {
+      "id": "deck-a-cue-led",
+      "physicalControl": "left CUE button",
+      "documentedMessage": {"status": "0x97", "note": 22, "activeVelocity": 15, "inactiveVelocity": 0},
+      "ledType": "bicolor",
+      "activeColor": "red",
+      "mixxx": {"group": "[Channel1]", "control": "cue_indicator"},
+      "historical": "Mapped to cue_indicator with full red 0x0f active and dim red 0x01 inactive.",
+      "validation": "M4 Stage B Mixxx feedback",
+      "physicalObservation": "2026-08-10 M4 live test: deck A CUE visibly followed Mixxx cue_indicator; the active Mixxx state blinked at approximately 2 updates per second."
+    },
+    {
+      "id": "deck-b-cue-led",
+      "physicalControl": "right CUE button",
+      "documentedMessage": {"status": "0x98", "note": 22, "activeVelocity": 15, "inactiveVelocity": 0},
+      "ledType": "bicolor",
+      "activeColor": "red",
+      "mixxx": {"group": "[Channel2]", "control": "cue_indicator"},
+      "historical": "Mapped to cue_indicator with full red 0x0f active and dim red 0x01 inactive.",
+      "validation": "M4 Stage B Mixxx feedback",
+      "physicalObservation": "2026-08-11 controller-v1 pass: deck-B CUE followed Mixxx cue_indicator physically. Blinking remains governed by Mixxx cue_mode."
+    },
+    {
+      "id": "deck-a-hotcue-led-bank",
+      "physicalControl": "left performance pads 1 through 8 on HOT CUES page",
+      "documentedMessage": {"status": "0x97", "noteRange": [96, 103], "activeVelocity": 79, "inactiveVelocity": 0},
+      "ledType": "bicolor-bank",
+      "activeColor": "amber",
+      "mixxx": {"group": "[Channel1]", "controls": ["hotcue_1_enabled", "hotcue_2_enabled", "hotcue_3_enabled", "hotcue_4_enabled", "hotcue_5_enabled", "hotcue_6_enabled", "hotcue_7_enabled", "hotcue_8_enabled"]},
+      "historical": "Mapped all eight hotcue_*_enabled controls with full amber 0x4f active and dim amber 0x41 inactive.",
+      "validation": "M4 Stage B representative Mixxx feedback; all eight messages covered deterministically",
+      "physicalObservation": "2026-08-10 M4 live test: left hot-cue pad state visibly followed Mixxx and amber 0x4f output was captured."
+    },
+    {
+      "id": "deck-b-hotcue-led-bank",
+      "physicalControl": "right performance pads 1 through 8 on HOT CUES page",
+      "documentedMessage": {"status": "0x98", "noteRange": [96, 103], "activeVelocity": 79, "inactiveVelocity": 0},
+      "ledType": "bicolor-bank",
+      "activeColor": "amber",
+      "mixxx": {"group": "[Channel2]", "controls": ["hotcue_1_enabled", "hotcue_2_enabled", "hotcue_3_enabled", "hotcue_4_enabled", "hotcue_5_enabled", "hotcue_6_enabled", "hotcue_7_enabled", "hotcue_8_enabled"]},
+      "historical": "Mapped all eight hotcue_*_enabled controls with full amber 0x4f active and dim amber 0x41 inactive.",
+      "validation": "M4 deterministic and transport coverage; physical deck-B visual parity deferred",
+      "physicalObservation": null
+    },
+    {
+      "id": "deck-a-loop-mode-led",
+      "physicalControl": "left AUTO LOOP mode button",
+      "documentedMessage": {"status": "0x97", "note": 58, "activeVelocity": 127, "inactiveVelocity": 0},
+      "ledType": "bicolor",
+      "activeColor": "green",
+      "mixxx": {"group": "[Channel1]", "control": "loop_enabled"},
+      "historical": "Historical mapping drove individual loop-pad LEDs from beatloop_*_enabled rather than using the mode button as a general loop-active indicator.",
+      "validation": "M4 Stage B loop-active indication; this is an intentional modern behavior",
+      "physicalObservation": "2026-08-10 M4 live test: general loop-active output 0x97 0x3a 0x7f/0x00 was captured and visible behavior was reported appropriate."
+    },
+    {
+      "id": "deck-b-loop-mode-led",
+      "physicalControl": "right AUTO LOOP mode button",
+      "documentedMessage": {"status": "0x98", "note": 58, "activeVelocity": 127, "inactiveVelocity": 0},
+      "ledType": "bicolor",
+      "activeColor": "green",
+      "mixxx": {"group": "[Channel2]", "control": "loop_enabled"},
+      "historical": "Historical mapping drove individual loop-pad LEDs from beatloop_*_enabled rather than using the mode button as a general loop-active indicator.",
+      "validation": "M4 Stage C representative feedback",
+      "physicalObservation": null
+    },
+    {
+      "id": "deck-a-loop-pad-led-bank",
+      "physicalControl": "left performance pads 1 through 8 on AUTO LOOP page",
+      "documentedMessage": {"status": "0x97", "noteRange": [112, 119], "activeVelocity": 127, "inactiveVelocity": 0},
+      "ledType": "bicolor-bank",
+      "activeColor": "green",
+      "mixxx": {"group": "[Channel1]", "controls": ["beatloop_0.5_enabled", "beatloop_1_enabled", "beatloop_2_enabled", "beatloop_4_enabled", "beatloop_8_enabled", "beatloop_16_enabled", "beatloop_32_enabled", "beatloop_64_enabled"]},
+      "historical": "Historical mapping drove these eight pads from the corresponding beatloop_*_enabled controls.",
+      "validation": "M4 Stage C, added after the first live test demonstrated that general loop-active indication did not illuminate the selected size pad",
+      "physicalObservation": "2026-08-10 M4 follow-up: selected left AUTO LOOP size pad illuminated green and extinguished when the loop was disabled."
+    },
+    {
+      "id": "deck-b-loop-pad-led-bank",
+      "physicalControl": "right performance pads 1 through 8 on AUTO LOOP page",
+      "documentedMessage": {"status": "0x98", "noteRange": [112, 119], "activeVelocity": 127, "inactiveVelocity": 0},
+      "ledType": "bicolor-bank",
+      "activeColor": "green",
+      "mixxx": {"group": "[Channel2]", "controls": ["beatloop_0.5_enabled", "beatloop_1_enabled", "beatloop_2_enabled", "beatloop_4_enabled", "beatloop_8_enabled", "beatloop_16_enabled", "beatloop_32_enabled", "beatloop_64_enabled"]},
+      "historical": "Historical mapping drove these eight pads from the corresponding beatloop_*_enabled controls.",
+      "validation": "M4 Stage C representative feedback",
+      "physicalObservation": null
+    },
+    {
+      "id": "fx-unit-1-deck-a-led",
+      "physicalControl": "MASTER FX left assignment button",
+      "documentedMessage": {"status": "0x9B", "note": 32, "activeVelocity": 16, "inactiveVelocity": 0},
+      "ledType": "single-color",
+      "mixxx": {"group": "[EffectRack1_EffectUnit1]", "control": "group_[Channel1]_enable"},
+      "historical": "Mapped to Effect Unit 1 deck-A assignment.",
+      "validation": "M4 Stage C representative FX state",
+      "physicalObservation": "2026-08-10 M4 live test: representative MASTER FX deck-A assignment LED followed Mixxx state."
+    },
+    {
+      "id": "fx-unit-1-deck-b-led",
+      "physicalControl": "MASTER FX right assignment button",
+      "documentedMessage": {"status": "0x9B", "note": 33, "activeVelocity": 16, "inactiveVelocity": 0},
+      "ledType": "single-color",
+      "mixxx": {"group": "[EffectRack1_EffectUnit1]", "control": "group_[Channel2]_enable"},
+      "historical": "Mapped to Effect Unit 1 deck-B assignment.",
+      "validation": "M4 Stage C representative FX state",
+      "physicalObservation": null
+    },
+    {
+      "id": "deck-a-v1-state-led-bank",
+      "physicalControl": "left headphone cue/PFL, FADER FX ON/OFF, BEAT GRID SET/CLR, KEYLOCK, and SYNC/AUTO buttons",
+      "documentedMessage": {
+        "status": "0x97",
+        "notes": {"PFL": 10, "FADER FX ON/OFF": 13, "BEAT GRID SET/CLR": 16, "KEYLOCK": 18, "SYNC/AUTO": 19},
+        "activeVelocity": 127,
+        "inactiveVelocity": 0
+      },
+      "ledType": "button-backlight-bank",
+      "mixxx": {
+        "mappings": [
+          {"group": "[Channel1]", "control": "pfl", "note": 10},
+          {"group": "[QuickEffectRack1_[Channel1]]", "control": "enabled", "note": 13},
+          {"group": "[Channel1]", "control": "quantize", "note": 16},
+          {"group": "[Channel1]", "control": "keylock", "note": 18},
+          {"group": "[Channel1]", "control": "sync_enabled", "note": 19}
+        ]
+      },
+      "historical": "The Mixxx 2.3.6 mapping bound these same documented button identities to the corresponding stateful controls; its default active output was full velocity.",
+      "validation": "controller-v1 deterministic and physical visual coverage complete",
+      "physicalObservation": "2026-08-11: all five normal-page backlights followed Mixxx; matching state was also confirmed across the alternate SHIFT page."
+    },
+    {
+      "id": "deck-b-v1-state-led-bank",
+      "physicalControl": "right headphone cue/PFL, FADER FX ON/OFF, BEAT GRID SET/CLR, KEYLOCK, and SYNC/AUTO buttons",
+      "documentedMessage": {
+        "status": "0x98",
+        "notes": {"PFL": 10, "FADER FX ON/OFF": 13, "BEAT GRID SET/CLR": 16, "KEYLOCK": 18, "SYNC/AUTO": 19},
+        "activeVelocity": 127,
+        "inactiveVelocity": 0
+      },
+      "ledType": "button-backlight-bank",
+      "mixxx": {
+        "mappings": [
+          {"group": "[Channel2]", "control": "pfl", "note": 10},
+          {"group": "[QuickEffectRack1_[Channel2]]", "control": "enabled", "note": 13},
+          {"group": "[Channel2]", "control": "quantize", "note": 16},
+          {"group": "[Channel2]", "control": "keylock", "note": 18},
+          {"group": "[Channel2]", "control": "sync_enabled", "note": 19}
+        ]
+      },
+      "historical": "The Mixxx 2.3.6 mapping bound these same documented button identities to the corresponding stateful controls; its default active output was full velocity.",
+      "validation": "controller-v1 deterministic and physical visual coverage complete",
+      "physicalObservation": "2026-08-11: all five normal-page backlights followed Mixxx; matching state was also confirmed across the alternate SHIFT page."
+    },
+    {
+      "id": "fx-unit-1-enabled-led",
+      "physicalControl": "MASTER FX ON/OFF button",
+      "documentedMessage": {"status": "0x9B", "note": 34, "activeVelocity": 16, "inactiveVelocity": 0},
+      "ledType": "single-color",
+      "mixxx": {"group": "[EffectRack1_EffectUnit1]", "control": "enabled"},
+      "historical": "Mapped to Effect Unit 1 enabled state.",
+      "validation": "controller-v1 deterministic and physical visual coverage complete",
+      "physicalObservation": "2026-08-11: MASTER FX ON/OFF backlight followed Effect Unit 1 enabled state."
+    },
+    {
+      "id": "channel-meter-a",
+      "physicalControl": "left channel level meter",
+      "documentedMessage": {"status": "0x97", "note": 95, "velocityRange": [0, 127]},
+      "ledType": "bargraph-with-decay",
+      "mixxx": {"group": "[Channel1]", "control": "VuMeter"},
+      "historical": "Mapped to VuMeter using note 95.",
+      "validation": "deferred visual polish",
+      "physicalObservation": null
+    },
+    {
+      "id": "channel-meter-b",
+      "physicalControl": "right channel level meter",
+      "documentedMessage": {"status": "0x98", "note": 95, "velocityRange": [0, 127]},
+      "ledType": "bargraph-with-decay",
+      "mixxx": {"group": "[Channel2]", "control": "VuMeter"},
+      "historical": "Mapped to VuMeter using note 95.",
+      "validation": "deferred visual polish",
+      "physicalObservation": null
+    },
+    {
+      "id": "touchstrip-light-guide-a",
+      "physicalControl": "left touchstrip light guide",
+      "documentedMessage": {"status": "0xB7", "controller": 21, "allowedValues": [0, 1, 2, 3, 16, 17, 18, 19]},
+      "ledType": "touchstrip-guide",
+      "mixxx": null,
+      "historical": "No required M4 functional mapping established.",
+      "validation": "deferred visual polish",
+      "physicalObservation": null
+    },
+    {
+      "id": "touchstrip-light-guide-b",
+      "physicalControl": "right touchstrip light guide",
+      "documentedMessage": {"status": "0xB8", "controller": 21, "allowedValues": [0, 1, 2, 3, 16, 17, 18, 19]},
+      "ledType": "touchstrip-guide",
+      "mixxx": null,
+      "historical": "No required M4 functional mapping established.",
+      "validation": "deferred visual polish",
+      "physicalObservation": null
+    }
+  ],
+  "explicitlyExcluded": [
+    {
+      "message": "0xB7 0x00 0x6F",
+      "reason": "enters advanced mode; not required for established M4 feedback and changes device behavior"
+    },
+    {
+      "message": "0xB7 0x00 0x7F or 0x70",
+      "reason": "global diagnostic all-LED commands are unnecessary and the manual warns that all-off in basic mode does not restore expected state"
+    },
+    {
+      "message": "channel 12 notes 28 through 31",
+      "reason": "Programmer's Reference says basic-mode FX PARAMS LEDs may not be externally controlled"
+    },
+    {
+      "message": "advanced-mode SysEx and undocumented messages",
+      "reason": "outside the demonstrated need and M4 safety policy"
+    }
+  ]
+}

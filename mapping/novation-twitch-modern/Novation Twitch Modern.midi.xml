@@ -1,0 +1,15 @@
+<?xml version="1.0" encoding="utf-8"?>
+<MixxxControllerPreset schemaVersion="1" mixxxVersion="2.5.6+">
+    <info>
+        <name>Novation Twitch Modern</name>
+        <author>Twitch Modern project</author>
+        <description>Bidirectional basic-mode mapping for the Novation Twitch Modern Core MIDI virtual endpoints.</description>
+        <manual>https://github.com/mixxxdj/mixxx/wiki/MIDI-Scripting</manual>
+    </info>
+    <controller id="Novation Twitch Modern" port="">
+        <scriptfiles>
+            <file functionprefix="NovationTwitchModern" filename="Novation-Twitch-Modern-scripts.js"/>
+        </scriptfiles>
+        <controls/>
+    </controller>
+</MixxxControllerPreset>

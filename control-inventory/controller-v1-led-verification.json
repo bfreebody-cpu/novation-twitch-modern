@@ -1,0 +1,100 @@
+{
+  "schemaVersion": 1,
+  "device": {
+    "name": "Novation Twitch",
+    "vid": "0x1235",
+    "pid": "0x0018",
+    "coreMIDISource": "Novation Twitch Modern",
+    "coreMIDIDestination": "Novation Twitch Modern"
+  },
+  "scope": {
+    "mode": "documented basic mode only",
+    "advancedMode": false,
+    "audio": false,
+    "purpose": "bounded controller-v1 visual and lifecycle acceptance test"
+  },
+  "visualChecks": [
+    {
+      "id": "deck-a-state-buttons",
+      "deck": "A",
+      "actions": ["headphone cue/PFL", "FADER FX ON/OFF", "BEAT GRID SET/CLR", "KEYLOCK", "SYNC/AUTO"],
+      "expected": "each button backlight follows its corresponding Mixxx state on and off",
+      "result": "pass: user confirmed all five physical backlights and corresponding Mixxx UI states changed on 2026-08-11"
+    },
+    {
+      "id": "deck-b-state-buttons",
+      "deck": "B",
+      "actions": ["headphone cue/PFL", "FADER FX ON/OFF", "BEAT GRID SET/CLR", "KEYLOCK", "SYNC/AUTO"],
+      "expected": "each button backlight follows its corresponding Mixxx state on and off",
+      "result": "pass: user confirmed all five physical backlights and corresponding Mixxx UI states changed on 2026-08-11"
+    },
+    {
+      "id": "deck-b-parity",
+      "deck": "B",
+      "actions": ["PLAY", "CUE", "HOT CUES pad 1", "AUTOLOOP pad for 1 beat"],
+      "expected": "visual behavior matches the already-proven deck-A behavior",
+      "result": "pass: PLAY, CUE, HOT CUES and AUTOLOOP visual parity confirmed physically on deck B"
+    },
+    {
+      "id": "master-fx",
+      "actions": ["MASTER FX DECK A assignment", "MASTER FX DECK B assignment", "MASTER FX ON/OFF"],
+      "expected": "each backlight follows Effect Unit 1 assignment or enabled state",
+      "result": "pass: DECK A, DECK B and ON/OFF backlights followed Effect Unit 1 state"
+    },
+    {
+      "id": "beatgrid-adjust-slip",
+      "deck": "A and B",
+      "actions": ["BEAT GRID ADJUST/SLIP normal press", "SHIFT-page BEAT GRID ADJUST/SLIP toggle"],
+      "expected": "normal ADJUST lights only while held and aligns the beatgrid; SHIFT + ADJUST toggles Mixxx slip_enabled with persistent feedback",
+      "result": "pass: both normal momentary and SHIFT-page persistent feedback confirmed physically on both decks"
+    },
+    {
+      "id": "alternate-page-hotcue-state",
+      "deck": "A and B",
+      "actions": ["set a hot cue", "select SHIFT page", "clear the lit hot cue", "return to normal page"],
+      "expected": "set hot cues remain illuminated on the alternate page and extinguish on both pages after clearing",
+      "result": "pass on both decks after alternate-page state mirroring was added"
+    }
+  ],
+  "lifecycleChecks": [
+    {
+      "id": "initial-state",
+      "action": "start the bridge, then Mixxx",
+      "expected": "all 101 mapped output connections are published once and visible states agree with Mixxx",
+      "result": "pass: 101 deterministic connections; all startup messages reached USB successfully in the final live run"
+    },
+    {
+      "id": "normal-mixxx-quit",
+      "action": "quit Mixxx normally while the bridge remains running",
+      "expected": "all owned LED definitions are cleared before the bridge closes",
+      "result": "pass: normal Mixxx quit visibly extinguished the mapped lights while the bridge remained healthy"
+    },
+    {
+      "id": "mixxx-restart",
+      "action": "restart Mixxx without restarting the bridge",
+      "expected": "controller reconnects and current Mixxx states are republished",
+      "result": "pass: Mixxx restart republished current states without controller reconfiguration"
+    },
+    {
+      "id": "device-reconnect",
+      "action": "unplug and reconnect the Twitch, then restart the bridge if automatic recovery is unavailable",
+      "expected": "no crash or retry loop; process-restart recovery restores both Core MIDI directions",
+      "result": "pass-with-restart-policy: unplug caused one terminal device-not-responding completion, synchronous output abort, clean process exit and no retry loop; after reconnect the bridge recovered immediately; the already-running Mixxx process did not hot-discover recreated endpoints, but a normal Mixxx restart restored both directions and all states without controller reconfiguration"
+    }
+  ],
+  "deferred": [
+    "channel VU meters",
+    "touchstrip light guides",
+    "LED animations and blinking policy changes",
+    "dim inactive color styling",
+    "advanced-mode output",
+    "Mic/Aux ON/OFF feedback until Twitch capture is published to Mixxx",
+    "native or emulated slicer implementation; the preserved historical compatibility page uses samplers 1-4, spinback on pad 5 and brake on pad 6"
+  ],
+  "behaviorNotes": [
+    "Hot cues are track metadata in Mixxx. Loading the same track on both decks intentionally shares its hot-cue set.",
+    "Normal AUTOLOOP pads are 0.5, 1, 2, 4, 8, 16, 32 and 64 beats. SHIFT-page pads are 0.03125, 0.0625, 0.125, 0.25, 0.5, 1, 2 and 4 beats; the first shifted pads therefore sound extremely fast by design.",
+    "CUE feedback follows Mixxx cue_indicator and therefore the selected Mixxx cue_mode. Cue mode 4 provides Mixxx behavior without blinking.",
+    "The final evidence captures are captures/20260811T175453.469Z-twitch-m4-bridge and captures/20260811T181502.652Z-twitch-m4-bridge."
+  ]
+}

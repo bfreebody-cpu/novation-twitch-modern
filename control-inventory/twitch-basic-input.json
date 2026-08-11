@@ -1,0 +1,228 @@
+{
+  "schemaVersion": 2,
+  "device": {
+    "vendorID": "0x1235",
+    "productID": "0x0018",
+    "transport": "interface 1 alternate 0, interrupt IN endpoint 0x84, unframed MIDI byte stream",
+    "mode": "basic"
+  },
+  "sources": {
+    "authoritativeBehavior": "docs/twitch-programmers-reference2.pdf",
+    "historicalCrossCheck": "reference/mixxx/2.3.6/res/controllers/mixco/novation_twitch.mixco.js"
+  },
+  "documented": [
+    {
+      "id": "deck-central-buttons",
+      "category": "transport-buttons",
+      "channels": {"A": 8, "B": 9, "C": 10, "D": 11},
+      "message": "note",
+      "numbers": [10, 13, 16, 17, 18, 19, 22, 23],
+      "physicalPanelControls": ["headphone/PFL", "FADER FX ON/OFF", "BEAT GRID SET/CLR", "BEAT GRID ADJUST/SLIP", "KEYLOCK", "SYNC/AUTO", "CUE", "PLAY/Pause"],
+      "programmersReferenceTraktorOverlayLabels": ["FILTER ON", "headphone/PFL", "SYNC", "SHIFT", "BACK", "FWD", "CUE", "PLAY/Pause"],
+      "labelNote": "The Programmer's Reference basic-mode figure is explicitly shown with a Traktor overlay. Physical labels are transcribed separately from the supplied User Guide and confirmed during live operation.",
+      "values": {"press": 127, "release": 0}
+    },
+    {
+      "id": "deck-selection",
+      "category": "deck-selection",
+      "channels": {"A/C toggle": 8, "B/D toggle": 9},
+      "message": "note",
+      "numbers": [0],
+      "physicalControl": "the left or right SHIFT button; the original panel has no separate Deck C or Deck D button",
+      "values": {"press": 127, "release": 0},
+      "behavior": "selects the A/C or B/D basic-mode page; paged controls then use the selected deck channel"
+    },
+    {
+      "id": "deck-mixer-continuous",
+      "category": "channel-faders-eq-gain",
+      "channels": {"A": 8, "B": 9, "C": 10, "D": 11},
+      "message": "control-change absolute 7-bit",
+      "numbers": {"channel fader": 7, "trim/gain": 9, "low EQ": 70, "mid EQ": 71, "high EQ": 72},
+      "values": {"minimum": 0, "maximum": 127, "EQ center detent": 64},
+      "behavior": "paged with pickup in basic mode"
+    },
+    {
+      "id": "crossfader",
+      "category": "crossfader",
+      "channels": [8],
+      "message": "control-change absolute 7-bit",
+      "numbers": [8],
+      "values": {"minimum": 0, "maximum": 127}
+    },
+    {
+      "id": "deck-encoders",
+      "category": "rotary-encoders",
+      "channels": {"tempo A-D": [8, 9, 10, 11], "FX-select left/right": [8, 9]},
+      "message": "control-change incremental two's-complement plus same-number note for integral press",
+      "numbers": {"tempo": 3, "FX select/filter": 6},
+      "values": {"one clockwise step": 1, "one anticlockwise step": 127, "press": 127, "release": 0}
+    },
+    {
+      "id": "browse-navigation",
+      "category": "browse-navigation",
+      "channels": [8],
+      "message": "notes plus incremental control-change for browse rotation",
+      "numbers": {"BROWSER/AREA": 80, "4 DECK/VIEW": 81, "LOAD A/C": 82, "LOAD B/D": 83, "CLOSE/BACK": 84, "browse encoder": 85, "OPEN/FWD": 86},
+      "values": {"button press": 127, "button release": 0, "encoder clockwise": 1, "encoder anticlockwise": 127}
+    },
+    {
+      "id": "performance",
+      "category": "performance",
+      "channels": {"A": 8, "B": 9, "C": 10, "D": 11},
+      "message": "notes",
+      "numbers": {"mode buttons": [56, 57, 58, 59], "HOT CUES pads": [96, 103], "FX pads": [104, 111], "LOOP pads": [112, 119], "BEAT GRID pads": [120, 127]},
+      "rangeNotation": "Each two-element pad array is an inclusive range of eight notes.",
+      "values": {"press": 127, "release": 0},
+      "behavior": "pads and backlights are page-managed by the device in basic mode"
+    },
+    {
+      "id": "fx-section",
+      "category": "fx-section",
+      "channels": [12],
+      "message": "notes and control changes",
+      "numbers": {"FX PARAMS notes": [28, 29, 30, 31], "FX ON notes": [32, 33, 34, 35], "no-page controls": [0, 1, 2, 3], "FX1 page controls": [4, 5, 6, 7], "FX2 page controls": [8, 9, 10, 11], "FX3 page controls": [12, 13, 14, 15], "FX4 page controls": [16, 17, 18, 19]},
+      "behavior": "each page maps left pot, left encoder, right encoder, right pot in that order; pots are absolute and encoders incremental"
+    },
+    {
+      "id": "touchstrips",
+      "category": "touchstrips",
+      "channels": {"A": 8, "B": 9, "C": 10, "D": 11},
+      "message": "note 71 touch/position and control changes",
+      "numbers": {"touch/position note": 71, "DROP absolute": 52, "SWIPE incremental": 53},
+      "values": {"touch position": [1, 127], "release": 0, "absolute range": [0, 127], "incremental clockwise/positive example": 1, "incremental anticlockwise/negative example": 127},
+      "behavior": "SWIPE and DROP buttons themselves emit no MIDI in basic mode"
+    },
+    {
+      "id": "direct-monitor",
+      "category": "other",
+      "channels": [8],
+      "message": "note",
+      "numbers": [9],
+      "values": {"off": 0, "on": 127}
+    }
+  ],
+  "documentedNonMIDIPhysicalControls": [
+    "headphone volume",
+    "headphone master/cue mix",
+    "booth volume",
+    "master volume",
+    "rear booth-output switch"
+  ],
+  "advancedMode": {
+    "documented": true,
+    "tested": false,
+    "reason": "M1b safety boundary forbids entering advanced mode; basic mode exposes every required physical input category for the M2 foundation."
+  },
+  "evidenceCaptures": [
+    "captures/20260810T174832.834Z-twitch-m1b-characterize",
+    "captures/20260810T181323.674Z-twitch-m1b-characterize",
+    "captures/20260810T182013.151Z-twitch-m1b-sustained",
+    "captures/20260810T182709.343Z-twitch-m1b-disconnect",
+    "captures/20260810T182805.770Z-twitch-m1b-reconnect-check",
+    "captures/20260810T184222.649Z-twitch-m1b-characterize"
+  ],
+  "observed": [
+    {
+      "id": "deck-central-buttons",
+      "status": "confirmed",
+      "channelsObserved": [8, 9, 10, 11],
+      "numbersObserved": [10, 13, 16, 17, 18, 19, 22, 23],
+      "valuesObserved": [0, 127],
+      "coverage": "all listed controls on A/B; representative paged controls on C/D"
+    },
+    {
+      "id": "deck-selection",
+      "status": "confirmed",
+      "channelsObserved": [8, 9],
+      "numbersObserved": [0],
+      "valuesObserved": [0, 127],
+      "result": "A/C and B/D page changes caused subsequent deck controls to use channels 10 and 11, then channels 8 and 9 after return"
+    },
+    {
+      "id": "deck-mixer-continuous",
+      "status": "confirmed",
+      "observedByChannel": {
+        "8": [7, 9, 70, 71, 72],
+        "9": [7, 9, 70, 71, 72],
+        "10": [7, 70, 71],
+        "11": [7]
+      },
+      "fullRangeObserved": [{"channel": 8, "number": 7}, {"channel": 9, "number": 7}],
+      "result": "all A/B channel-fader, gain and EQ identifiers agreed; C/D paging was sampled rather than exhaustive"
+    },
+    {
+      "id": "crossfader",
+      "status": "confirmed",
+      "channelsObserved": [8],
+      "numbersObserved": [8],
+      "minimumObserved": 0,
+      "maximumObserved": 127
+    },
+    {
+      "id": "deck-encoders",
+      "status": "confirmed",
+      "tempoChannelsObserved": [8, 9, 10, 11],
+      "fxSelectChannelsObserved": [8, 9],
+      "numbersObserved": [3, 6],
+      "directionValuesObserved": [1, 127],
+      "pressValuesObserved": [0, 127]
+    },
+    {
+      "id": "browse-navigation",
+      "status": "confirmed-with-discrepancy",
+      "documentedChannelObserved": 8,
+      "numbersObserved": [80, 81, 82, 83, 84, 85, 86],
+      "buttonValuesObserved": [0, 127],
+      "encoderDirectionValuesObserved": [1, 127],
+      "discrepancy": "LOAD A/C and LOAD B/D also produced note 82/83 press/release on channel 10 while the C/D page was active; the basic-mode table documents browse buttons only on channel 8"
+    },
+    {
+      "id": "performance",
+      "status": "confirmed-representative",
+      "modeButtonNumbersObservedByChannel": {"8": [56, 57, 58, 59], "9": [56, 57, 58, 59], "10": [56, 57, 58, 59], "11": [56, 57, 58, 59]},
+      "padNumbersObservedByChannel": {
+        "8": [96, 97, 98, 99, 100, 101, 102, 103, 108, 109, 110, 111, 112, 113, 114, 115, 116, 117, 118, 119, 120, 121, 122, 123, 124, 125, 126, 127],
+        "9": [96, 97, 98, 99, 100, 101, 102, 103, 112, 113, 114, 115, 116, 117, 118, 119, 120, 121, 122, 123, 124, 125, 126, 127],
+        "10": [120, 121, 122, 123, 124, 125, 126, 127],
+        "11": [104, 105, 106, 107, 108, 109, 110, 111, 112, 113, 114, 120, 121, 122, 123, 124, 125, 126, 127]
+      },
+      "valuesObserved": [0, 127],
+      "result": "Every documented basic-mode pad note 96-127 was observed on at least one deck; HOT CUES 96-103 and AUTO LOOP/basic LOOP 112-119 were explicitly confirmed on both physical sides"
+    },
+    {
+      "id": "fx-section",
+      "status": "confirmed-with-additions",
+      "channelsObserved": [12],
+      "documentedNoteNumbersObserved": [28, 29, 30, 31, 32, 33, 34, 35],
+      "documentedControlChangeNumbersObserved": [0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19],
+      "additionalNoteNumbersObserved": [5, 6, 9, 10, 13, 14, 17, 18],
+      "additionalNoteValuesObserved": [0, 127],
+      "addition": "Integral presses on page-dependent FX encoders emitted same-number notes; these presses are not explicit in the basic-mode FX-page table",
+      "result": "All five page states were exercised and every documented page-dependent controller-change number 0-19 was observed across M1b captures"
+    },
+    {
+      "id": "touchstrips",
+      "status": "confirmed",
+      "channelsObserved": [8, 9, 10, 11],
+      "numbersObserved": {"touch/position note": 71, "DROP absolute": 52, "SWIPE incremental": 53},
+      "releaseValueObserved": 0,
+      "absoluteExtremesObserved": [0, 127],
+      "incrementalDirectionValuesObserved": [1, 127],
+      "result": "touch, release, SWIPE and DROP behavior were observed on A/B and again on paged C/D"
+    },
+    {
+      "id": "direct-monitor",
+      "status": "confirmed",
+      "channelsObserved": [8],
+      "numbersObserved": [9],
+      "valuesObserved": [0, 127]
+    }
+  ],
+  "physicalObservations": [
+    {
+      "observation": "Before M1b, the operator saw touchstrip lighting change from strobing-only to solid, with HOT CUES and SWIPE illuminated.",
+      "classification": "physical observation; cause and timing unknown",
+      "safetyContext": "the M1 software sent no controller OUT, MIDI, LED, vendor-specific or audio traffic"
+    }
+  ]
+}
