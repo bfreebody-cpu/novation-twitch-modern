@@ -11,6 +11,10 @@ settings directory. On the sandboxed macOS build used for M3 this is:
 ~/Library/Containers/org.mixxx.mixxx/Data/Library/Application Support/Mixxx/controllers
 ```
 
+For an automatic installation that preserves backups of differing files, run
+`../../scripts/install-mixxx-mapping.sh` from this repository. Novice users
+should follow `../../BEGINNER_GUIDE.md`.
+
 In Mixxx Preferences > Controllers, select `Novation Twitch Modern`, enable it,
 and choose the `Novation Twitch Modern` mapping.
 
