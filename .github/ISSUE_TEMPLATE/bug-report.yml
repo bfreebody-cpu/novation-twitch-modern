@@ -1,0 +1,31 @@
+name: Controller bug report
+description: Report a reproducible controller bridge or Mixxx mapping problem
+title: "Controller: "
+labels:
+  - bug
+body:
+  - type: textarea
+    id: problem
+    attributes:
+      label: Problem
+      description: Describe what happened and what you expected.
+    validations:
+      required: true
+  - type: textarea
+    id: reproduce
+    attributes:
+      label: Reproduction steps
+    validations:
+      required: true
+  - type: input
+    id: versions
+    attributes:
+      label: macOS and Mixxx versions
+    validations:
+      required: true
+  - type: checkboxes
+    attributes:
+      label: Scope
+      options:
+        - label: I reproduced this with the current `main` branch and the canonical user-level mapping.
+        - label: I removed personal paths, machine identifiers, certificates, and provisioning information from logs.

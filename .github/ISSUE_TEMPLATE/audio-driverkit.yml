@@ -1,0 +1,44 @@
+name: AudioDriverKit contribution
+description: Help complete the playback-only Core Audio driver with proper Apple entitlements
+title: "AudioDriverKit: "
+labels:
+  - audio
+  - help wanted
+body:
+  - type: markdown
+    attributes:
+      value: |
+        Thanks for helping restore Twitch audio. Read `docs/AUDIO_CONTRIBUTORS.md` and `docs/history/A3_STATUS.md` first. The current scaffold is incomplete and must not be activated casually.
+  - type: checkboxes
+    attributes:
+      label: Safety and scope
+      options:
+        - label: I will not disable SIP, use reduced-security boot, or execute legacy Novation binaries.
+          required: true
+        - label: I will preserve interface 1 for the stable controller bridge.
+          required: true
+        - label: I understand A3 is playback-only and capture publication is deferred.
+          required: true
+  - type: dropdown
+    id: entitlement
+    attributes:
+      label: DriverKit entitlement access
+      description: Do not post team identifiers, certificates, or provisioning profiles.
+      options:
+        - Eligible team with approved Audio and USB transport entitlements
+        - Eligible team; entitlements not yet requested or approved
+        - No entitlement access; contributing compile-only code or tests
+    validations:
+      required: true
+  - type: textarea
+    id: contribution
+    attributes:
+      label: Proposed contribution
+      description: Identify the bounded implementation or validation task and how it will be tested.
+    validations:
+      required: true
+  - type: textarea
+    id: hardware
+    attributes:
+      label: Hardware and macOS environment
+      description: Include macOS/Xcode versions and whether physical Twitch hardware is available. Do not include serials or personal paths.
