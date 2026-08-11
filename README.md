@@ -38,8 +38,12 @@ installation, daily startup, shutdown, reconnect, and troubleshooting steps.
 
 ## Quick start: controller and Mixxx
 
-Requirements: Apple silicon Mac, macOS 15 or newer, Swift 6.2/Xcode 26 command
-line tools, Mixxx 2.5.6 or compatible, and a connected Novation Twitch.
+Requirements: Apple silicon Mac, macOS 15 or newer, Apple's free Command Line
+Tools with Swift 6.2 (full Xcode is not required), Mixxx 2.5.6 or compatible,
+and a connected Novation Twitch. No Apple Developer account, signing certificate,
+DriverKit entitlement, or security change is needed for controller support. The
+tools are required only because the current release builds the bridge from
+source; see the beginner guide for the one-command installation.
 
 ```sh
 ./scripts/install-mixxx-mapping.sh
@@ -110,6 +114,14 @@ of megabytes of raw hardware captures. Their exact hashes and upstream
 provenance are retained in [reference/README.md](reference/README.md). Public
 inventories and status documents preserve the measured findings without
 publishing personal machine state.
+
+## Optional support
+
+Novation Twitch Modern is free and open source. If it brought your controller
+back to life and you feel inclined, you can buy me a coffee. Contributions are
+entirely optional and do not affect access, features, or support.
+
+[![Buy me a coffee on Ko-fi](https://ko-fi.com/img/githubbutton_sm.svg)](https://ko-fi.com/H3X824WEVX)
 
 ## License
 
