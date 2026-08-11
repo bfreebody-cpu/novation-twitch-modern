@@ -17,22 +17,53 @@ those are physical audio research tools.
 
 ## Before you begin
 
+### The short version: you do not need to become an Apple developer
+
+You do **not** need:
+
+- the full Xcode application;
+- an Apple Developer account;
+- a paid Apple Developer Program membership;
+- code-signing certificates;
+- DriverKit entitlements; or
+- weaker macOS security settings.
+
+The smallest requirement is Apple's free **Command Line Tools**. This release is
+provided as source code, so your Mac needs its Swift compiler and macOS SDK to
+build the small controller bridge locally. It does not install a system driver.
+After the first build, the launcher reuses the built program unless the source
+needs rebuilding.
+
+A future signed, prebuilt controller release could remove this development-tool
+requirement for ordinary users. The special DriverKit requirements discussed
+elsewhere in the project apply only to developers working on the unfinished
+Twitch audio device—not to controller and LED support.
+
 You need:
 
 - an Apple-silicon Mac running macOS 15 or newer;
 - a Novation Twitch connected directly by USB;
 - Mixxx 2.5.6 or a compatible current Mixxx release; and
-- current Xcode or Apple's Command Line Tools.
+- current Apple Command Line Tools, or Xcode if it is already installed.
 
-Open Terminal (Applications > Utilities > Terminal) and check for Swift:
+Open Terminal (Applications > Utilities > Terminal). To install the smaller
+Command Line Tools package, run:
+
+```sh
+xcode-select --install
+```
+
+macOS opens an Apple installation dialog. If the tools are already installed,
+the command simply tells you so. Then check the Swift compiler:
 
 ```sh
 swift --version
 ```
 
-If Terminal says `command not found`, install Xcode from the App Store, launch it
-once so its components finish installing, and try again. Controller support does
-not require an Apple Developer account or DriverKit entitlements.
+This project currently uses Swift 6.2. If Terminal says `command not found` or
+shows an older version, install available Command Line Tools updates through
+System Settings > General > Software Update. Installing the much larger Xcode
+application is an alternative, not a requirement.
 
 ## 1. Download the project
 
