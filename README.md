@@ -115,6 +115,14 @@ provenance are retained in [reference/README.md](reference/README.md). Public
 inventories and status documents preserve the measured findings without
 publishing personal machine state.
 
+## Optional support
+
+Novation Twitch Modern is free and open source. If it brought your controller
+back to life and you feel inclined, you can buy me a coffee. Contributions are
+entirely optional and do not affect access, features, or support.
+
+[![Buy me a coffee on Ko-fi](https://ko-fi.com/img/githubbutton_sm.svg)](https://ko-fi.com/H3X824WEVX)
+
 ## License
 
 Original project code and the adapted mapping are licensed under
