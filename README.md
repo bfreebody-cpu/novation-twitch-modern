@@ -32,15 +32,18 @@ security.
 See [controller v1 status](docs/history/CONTROLLER_V1_STATUS.md) and the
 [mapping guide](mapping/novation-twitch-modern/README.md).
 
+**New to Terminal or Mixxx?** Start with the
+[beginner guide](BEGINNER_GUIDE.md). It includes safe one-time mapping
+installation, daily startup, shutdown, reconnect, and troubleshooting steps.
+
 ## Quick start: controller and Mixxx
 
 Requirements: Apple silicon Mac, macOS 15 or newer, Swift 6.2/Xcode 26 command
 line tools, Mixxx 2.5.6 or compatible, and a connected Novation Twitch.
 
 ```sh
-swift build
-swift run twitch-parser-tests
-swift run twitch-m4 --mode m4-bridge
+./scripts/install-mixxx-mapping.sh
+./scripts/run-controller.sh
 ```
 
 Copy these two canonical mapping files into Mixxx's user controller directory:
@@ -61,6 +64,9 @@ Start the bridge before Mixxx. In Mixxx Preferences > Controllers, enable
 disconnect, reconnect the Twitch, restart the bridge, and restart Mixxx; Mixxx
 2.5.6 does not hot-discover recreated virtual MIDI endpoints while already
 running.
+
+The root `Start Twitch Modern.command` file is a Finder-friendly wrapper around
+the same safe controller launcher.
 
 ## Safety and scope
 
