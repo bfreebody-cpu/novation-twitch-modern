@@ -38,6 +38,34 @@ Apple ties approved entitlements to a development team. Vendor ownership of VID
 Apple's supported process is documented in
 [Requesting Entitlements for DriverKit Development](https://developer.apple.com/documentation/driverkit/requesting-entitlements-for-driverkit-development).
 
+## Stewardship and entitlement-request intent
+
+The Twitch is Novation/Focusrite hardware. Its industrial design, firmware,
+trademarks, USB vendor ID `0x1235`, and product identity remain associated with
+the original manufacturer; ownership of an individual physical unit remains
+with that unit's owner. This is an unofficial community project and does not
+claim endorsement, authorization, or ownership from Novation or Focusrite.
+
+Any Apple entitlement request made for this project must be accurate and should
+state plainly that:
+
+- the Twitch is discontinued legacy hardware whose original macOS driver no
+  longer supports current Apple-silicon systems;
+- the purpose is preservation: keeping functional controllers useful and out of
+  landfills rather than forcing otherwise-unnecessary hardware replacement;
+- the implementation and controller access are free and open source, with no
+  payment required for software, features, or support;
+- the project is not attempting to sell, relabel, impersonate, or take control
+  of Novation/Focusrite hardware or intellectual property;
+- the requested USB transport scope is narrowly limited to Twitch VID
+  `0x1235`, PID `0x0018`, audio interface 0; and
+- the project welcomes coordination with Novation/Focusrite and will respect any
+  legitimate technical, trademark, or authorization requirements they identify.
+
+This preservation rationale must not be used to conceal relevant facts or imply
+that Apple approval is automatic. Optional tips support community work but do
+not purchase access and should not be characterized as payment for the driver.
+
 ## Remaining implementation
 
 - Resolve or justify all static-analyzer ownership warnings.
