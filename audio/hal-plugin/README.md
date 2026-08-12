@@ -22,3 +22,12 @@ Installation and removal are separate administrator-authorized operations. Read
 
 A normal reboot is required after installation and after removal. The scripts do
 not attempt to restart SIP-protected Core Audio services.
+
+## Measured Phase 1 result
+
+On arm64 macOS 26.5.2, the ad-hoc-signed bundle loaded after a normal reboot
+with SIP enabled. Core Audio published four output channels and both discrete
+sample rates, and StartIO/StopIO passed at 44.1 and 48 kHz. Mixxx 2.5.6 also
+discovered the experimental device:
+
+![Mixxx Sound Hardware showing Novation Twitch Modern Audio - Experimental](../../docs/images/audio-hal-mixxx-discovery.png)
