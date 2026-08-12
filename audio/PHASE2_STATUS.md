@@ -4,7 +4,7 @@
 - Status: **IN PROGRESS**
 - Tracking issue: https://github.com/bfreebody-cpu/novation-twitch-modern/issues/5
 - Draft implementation: https://github.com/bfreebody-cpu/novation-twitch-modern/pull/6
-- Gate 2: **NOT YET DECIDED**
+- Gate 2: **FAILED FOR GUI-LAUNCHAGENT ARCHITECTURE**
 
 ## Scope
 
@@ -195,3 +195,52 @@ service in the logged-in GUI bootstrap domain on the tested macOS release. That
 cross-domain lookup cannot be established by the same-UID local harness. The
 next bounded installation exists solely to answer that question before live
 audio or helper-restart work continues.
+
+## Installed 0.3.0 cross-domain result
+
+The 0.3.0 bundle and its user LaunchAgent were installed, validated, and loaded
+after a normal reboot with SIP unchanged. macOS published the experimental
+four-output virtual device at 48 kHz. The LaunchAgent was enabled and registered
+in `gui/501`, but remained on demand with zero launches.
+
+At plug-in load, macOS explicitly recognized
+`AudioServerPlugIn_MachServices` and extended the isolated driver host sandbox
+for the declared service. The subsequent lookup nevertheless occurred in the
+system bootstrap domain:
+
+```text
+failed lookup: name = com.twitchmodern.NovationTwitchModernAudioExperimental.bridge,
+requestor = com.apple.audio[510], error = 3: No such process
+```
+
+The plug-in logged `XPC bridge service is unavailable`. A bounded 48 kHz Core
+Audio run then completed 469 callbacks / 240,128 frames and a clean
+StartIO/StopIO, but the helper launch count remained zero and no bridge log was
+created. Those frames were intentionally discarded by the fail-open plug-in;
+this was not successful IPC delivery.
+
+This establishes that an AudioServerPlugIn hosted as `_coreaudiod` cannot reach
+a Mach service advertised solely by the logged-in user's LaunchAgent on the
+tested macOS 26.5.2 system. Same-UID XPC tests remain valid evidence for the
+transport implementation, but do not solve bootstrap-domain visibility.
+
+No helper ran as root, no world-writable mapping or permission workaround was
+introduced, and no USB device was opened. The planned live rate, restart, and
+30-minute tests are blocked and were not attempted.
+
+A new observation was also recorded after this reboot: the user's Logitech Wave
+Keys 670 required a second connection wait after sign-in. Bluetooth logs show
+the keyboard reconnecting and negotiating HID parameters roughly 50 seconds
+after the audio plug-in loaded. The Twitch LaunchAgent had zero runs, so it
+cannot directly explain the delay; causation by the otherwise idle HAL plug-in
+is also not established. Rechecking after the required uninstall reboot is the
+clean control.
+
+## Gate 2 decision
+
+**NO for the user-LaunchAgent design.** Do not proceed to USB, helper restart,
+or sustained Core Audio work on this topology. Do not move the same helper to a
+root LaunchDaemon or weaken shared-memory permissions without a new, explicit
+security and lifecycle architecture review. The installed experimental payloads
+should be removed in the documented user-then-root order and followed by a
+normal reboot.

@@ -74,6 +74,20 @@ The service runs as the logged-in user, allocates the anonymous mapping, and
 accepts only `_coreaudiod` as its mapping peer. Its exact installation and
 uninstall behavior is specified in `audio/INSTALLATION_CONTRACT.md`.
 
+### Measured bootstrap-domain limitation
+
+The corrected 0.3.0 build proved anonymous XPC shared-memory transfer locally,
+but failed after installation. macOS honored the plug-in's declared Mach-service
+sandbox extension, then resolved its connection from the system bootstrap domain.
+The service registered only in the user's `gui/501` domain was not visible;
+launchd returned `No such process`, and the LaunchAgent recorded zero launches.
+
+Therefore the user-LaunchAgent form of this architecture is rejected on the
+tested macOS 26.5.2 system. The project will not silently convert it to a root
+LaunchDaemon or a world-writable POSIX mapping. Either choice requires a new ADR
+covering trust, lifecycle, installation, multi-user behavior, and source-build
+usability before implementation or installation.
+
 ## Isolation
 
 - Stable controller code remains on `main`.
@@ -129,3 +143,6 @@ Costs and risks:
 Stop and reassess if the minimal plug-in cannot load under normal macOS 26
 security, reliable uninstall cannot be provided, or later interface-0 ownership
 breaks the stable controller path.
+
+The Phase 2 GUI-LaunchAgent lookup failure triggered this reassessment. No USB
+integration is authorized on that topology.

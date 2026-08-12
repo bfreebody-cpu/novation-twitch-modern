@@ -37,15 +37,11 @@ scripts/audio/run-xpc-access-control-test.sh
 The first command uses a deterministic synthetic producer rather than Core
 Audio. Captures are written under the ignored `captures/audio/` directory.
 
-After a separately reviewed installation and required reboot, the installed
-HAL path can be exercised without USB access using:
-
-```sh
-scripts/audio/run-live-hal-phase2-test.sh 5 48000
-scripts/audio/run-live-hal-restart-test.sh
-```
-
-Both scripts refuse to run when the exact experimental bundle is absent.
+The installed 0.3.0 test established that the isolated Core Audio host cannot
+discover a Mach service registered only in the logged-in user's GUI launchd
+domain. The former live-delivery and restart scripts now stop with that measured
+blocker rather than mistaking fail-open HAL callbacks for bridge delivery. See
+`../PHASE2_STATUS.md`.
 
 Installation and removal are separate administrator-authorized operations. Read
 `audio/INSTALLATION_CONTRACT.md` before running either script.

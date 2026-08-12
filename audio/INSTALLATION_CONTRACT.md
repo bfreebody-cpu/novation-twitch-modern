@@ -2,6 +2,11 @@
 
 This contract applies to the USB-independent Phase 1 and Phase 2 probes.
 
+> **Historical test contract:** the installed 0.3.0 experiment proved that the
+> system-domain Core Audio host cannot discover the GUI-domain LaunchAgent. Do
+> not install this topology again as a proposed working bridge. These rules are
+> retained to make the existing test fully reversible and auditable.
+
 ## Payload
 
 The administrator-authorized installer may create exactly one system payload:
