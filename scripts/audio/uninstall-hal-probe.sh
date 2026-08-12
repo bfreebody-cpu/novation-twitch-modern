@@ -24,5 +24,4 @@ test "$actual_id" = "$expected_id" || {
 
 echo "Removing exactly: $install_path"
 rm -rf -- "$install_path"
-launchctl kickstart -k system/com.apple.audio.coreaudiod
-echo "Removed experimental HAL probe."
+echo "Removed experimental HAL probe. Reboot normally to complete removal."

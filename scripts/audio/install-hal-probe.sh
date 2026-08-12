@@ -34,6 +34,6 @@ echo "Installing exactly: $install_path"
 ditto "$bundle" "$install_path"
 chown -R root:wheel "$install_path"
 codesign --verify --deep --strict --verbose=2 "$install_path"
-launchctl kickstart -k system/com.apple.audio.coreaudiod
-echo "Installed. Open Audio MIDI Setup and look for:"
+echo "Installed successfully. A normal reboot is required before Core Audio"
+echo "can discover the plug-in. After reboot, open Audio MIDI Setup and look for:"
 echo "  Novation Twitch Modern Audio - Experimental"

@@ -19,3 +19,6 @@ for local feasibility testing.
 
 Installation and removal are separate administrator-authorized operations. Read
 `audio/INSTALLATION_CONTRACT.md` before running either script.
+
+A normal reboot is required after installation and after removal. The scripts do
+not attempt to restart SIP-protected Core Audio services.

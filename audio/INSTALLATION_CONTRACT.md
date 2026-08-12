@@ -28,7 +28,11 @@ extension, package receipt, preference file, or legacy Novation component.
 - Copies only to the exact path above.
 - Sets conventional root ownership on the installed copy.
 - Verifies the installed code signature.
-- Restarts Core Audio so it can discover the plug-in.
+- Requires a normal reboot so Core Audio can discover the plug-in. Apple's
+  current NullAudio sample also specifies rebooting after installation. On the
+  tested macOS 26.5.2 system, attempting to kickstart the protected system
+  `coreaudiod` service is rejected while SIP is enabled; the project does not
+  weaken SIP or retry through unsupported mechanisms.
 
 Installation does not access the Twitch and does not change macOS security
 settings.
@@ -39,7 +43,7 @@ settings.
 - Resolves only the exact path above.
 - Refuses removal unless the installed bundle identifier exactly matches.
 - Removes the one project-owned bundle.
-- Restarts Core Audio.
+- Requires a normal reboot so Core Audio unloads the removed plug-in.
 
 If validation fails, the script stops and asks for manual inspection. It does
 not broaden the deletion target.
@@ -47,4 +51,5 @@ not broaden the deletion target.
 ## Recovery
 
 If Core Audio behaves unexpectedly after installation, run the project uninstall
-script and reboot. Do not disable SIP or enable Reduced Security.
+script and reboot. Do not disable SIP or enable Reduced Security. The scripts do
+not terminate or kickstart protected audio services.
