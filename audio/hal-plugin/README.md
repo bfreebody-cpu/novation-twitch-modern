@@ -1,11 +1,17 @@
-# USB-independent HAL feasibility probe
+# USB-independent HAL and shared-memory probe
 
-This Phase 1 probe publishes a virtual four-channel output device named
+This experimental plug-in publishes a virtual four-channel output device named
 `Novation Twitch Modern Audio - Experimental`. It accepts 32-bit interleaved
-floating-point Core Audio samples at 44.1 or 48 kHz and discards them.
+floating-point Core Audio samples at 44.1 or 48 kHz.
 
-It contains no USB code, never discovers or opens the Twitch, and produces no
-physical audio output.
+In Phase 2, its mixed-output callback writes those frames to the versioned
+single-producer/single-consumer ring documented in `../shared/README.md`. The
+separate `TwitchAudioDiscardHelper` process consumes and discards them. If the
+ring is full or unavailable, the plug-in drops the frames; it never blocks the
+Core Audio real-time thread.
+
+The plug-in and helper contain no USB code, never discover or open the Twitch,
+and produce no physical audio output.
 
 Build from the repository root:
 
@@ -16,6 +22,27 @@ scripts/audio/build-hal-probe.sh
 The build downloads libASPL from its official GitHub repository at the exact
 commit recorded in `audio/DEPENDENCIES.md`. The resulting bundle is ad-hoc signed
 for local feasibility testing.
+
+Run a USB-independent two-process test after building:
+
+```sh
+scripts/audio/run-shared-audio-test.sh 10 48000
+scripts/audio/run-shared-audio-rate-change-test.sh
+scripts/audio/run-shared-audio-restart-test.sh
+```
+
+The first command uses a deterministic synthetic producer rather than Core
+Audio. Captures are written under the ignored `captures/audio/` directory.
+
+After a separately reviewed installation and required reboot, the installed
+HAL path can be exercised without USB access using:
+
+```sh
+scripts/audio/run-live-hal-phase2-test.sh 5 48000
+scripts/audio/run-live-hal-restart-test.sh
+```
+
+Both scripts refuse to run when the exact experimental bundle is absent.
 
 Installation and removal are separate administrator-authorized operations. Read
 `audio/INSTALLATION_CONTRACT.md` before running either script.

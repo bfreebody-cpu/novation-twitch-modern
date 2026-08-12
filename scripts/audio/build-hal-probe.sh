@@ -20,6 +20,7 @@ bundle="$build_dir/NovationTwitchModernAudioExperimental.driver"
 test -d "$bundle"
 
 echo "Built: $bundle"
+echo "Built: $build_dir/TwitchAudioDiscardHelper"
 codesign --verify --deep --strict --verbose=2 "$bundle"
 /usr/libexec/PlistBuddy -c 'Print :CFBundleIdentifier' \
     "$bundle/Contents/Info.plist"

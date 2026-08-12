@@ -44,13 +44,25 @@ The probe will use libASPL at the exact commit recorded in
 an MIT-licensed implementation of AudioServerPlugIn boilerplate. Apple's current
 minimal NullAudio sample remains the API and behavior authority.
 
+Phase 2 extends the accepted probe with an ABI-versioned, bounded
+single-producer/single-consumer shared-memory ring. The HAL callback remains
+fail-open: it publishes frames with lock-free atomics and bounded memory copies,
+drops complete callbacks when full, and never waits for the helper. The helper
+is still launched manually from the build tree and discards samples; it is not
+installed or configured as a persistent service.
+
+Stale frames are discarded whenever a helper attaches. A monotonic heartbeat
+and consumer-generation token permit recovery from an abruptly terminated
+helper without allowing a resumed old process to advance the shared read index.
+The exact ABI and lifecycle rules are documented in `audio/shared/README.md`.
+
 ## Isolation
 
 - Stable controller code remains on `main`.
 - Work occurs on `experiment/audio-hal-bridge` in a separate worktree.
 - Experimental implementation lives under `audio/` and `scripts/audio/`.
 - The existing `A3/` AudioDriverKit scaffold remains intact as an alternative.
-- Phase 1 makes no USB calls and does not access the Twitch.
+- Phases 1 and 2 make no USB calls and do not access the Twitch.
 - No experimental audio code is merged until the gates in Issue #5 are met.
 
 ## Installation boundary

@@ -1,6 +1,6 @@
 # Experimental HAL probe installation contract
 
-This contract applies only to the USB-independent Phase 1 feasibility probe.
+This contract applies to the USB-independent Phase 1 and Phase 2 probes.
 
 ## Payload
 
@@ -16,8 +16,13 @@ Expected bundle identifier:
 com.twitchmodern.NovationTwitchModernAudioExperimental
 ```
 
-It installs no USB helper, daemon, launch item, Driver Extension, kernel
+It installs no helper executable, daemon, launch item, Driver Extension, kernel
 extension, package receipt, preference file, or legacy Novation component.
+
+During Phase 2 runtime, the plug-in or manually launched helper may create the
+user-scoped POSIX shared-memory object `/ntm_audio_v1`. It is a bounded runtime
+mapping, not an installed system payload. It contains audio frames and counters
+only. No process is configured to start persistently.
 
 ## Installation behavior
 
@@ -43,6 +48,8 @@ settings.
 - Resolves only the exact path above.
 - Refuses removal unless the installed bundle identifier exactly matches.
 - Removes the one project-owned bundle.
+- Removes the exact `/ntm_audio_v1` name when the locally built cleanup helper is
+  available; existing process mappings remain valid until those processes stop.
 - Requires a normal reboot so Core Audio unloads the removed plug-in.
 
 If validation fails, the script stops and asks for manual inspection. It does

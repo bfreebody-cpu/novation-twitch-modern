@@ -6,7 +6,9 @@
 
 #include <atomic>
 #include <chrono>
+#include <cmath>
 #include <cstdio>
+#include <cstdlib>
 #include <cstring>
 #include <thread>
 #include <vector>
@@ -155,7 +157,7 @@ bool SetRate(AudioObjectID device, Float64 rate)
     return false;
 }
 
-bool ExerciseIO(AudioObjectID device, Float64 rate)
+bool ExerciseIO(AudioObjectID device, Float64 rate, double durationSeconds)
 {
     if (!SetRate(device, rate)) {
         return false;
@@ -172,7 +174,7 @@ bool ExerciseIO(AudioObjectID device, Float64 rate)
         AudioDeviceDestroyIOProcID(device, ioProc);
         return false;
     }
-    std::this_thread::sleep_for(std::chrono::milliseconds(500));
+    std::this_thread::sleep_for(std::chrono::duration<double>(durationSeconds));
     const bool stopped = Check(AudioDeviceStop(device, ioProc), "AudioDeviceStop");
     const bool destroyed = Check(
         AudioDeviceDestroyIOProcID(device, ioProc), "AudioDeviceDestroyIOProcID");
@@ -189,8 +191,41 @@ bool ExerciseIO(AudioObjectID device, Float64 rate)
 
 } // namespace
 
-int main()
+int main(int argc, char** argv)
 {
+    double durationSeconds = 0.5;
+    Float64 requestedRate = 0;
+    for (int index = 1; index < argc; ++index) {
+        if (index + 1 >= argc) {
+            std::fputs("Usage: HalLiveProbe [--duration SECONDS] "
+                       "[--rate 44100|48000]\n",
+                stderr);
+            return 2;
+        }
+        const char* option = argv[index++];
+        const char* value = argv[index];
+        char* end = nullptr;
+        if (std::strcmp(option, "--duration") == 0) {
+            durationSeconds = std::strtod(value, &end);
+        } else if (std::strcmp(option, "--rate") == 0) {
+            requestedRate = std::strtod(value, &end);
+        } else {
+            std::fputs("unknown option\n", stderr);
+            return 2;
+        }
+        if (end == value || *end != '\0') {
+            std::fputs("invalid numeric option\n", stderr);
+            return 2;
+        }
+    }
+    if (!std::isfinite(durationSeconds) || !std::isfinite(requestedRate) ||
+        durationSeconds <= 0 || durationSeconds > 3600 ||
+        (requestedRate != 0 && requestedRate != 44100.0 &&
+            requestedRate != 48000.0)) {
+        std::fputs("invalid duration or rate\n", stderr);
+        return 2;
+    }
+
     const AudioObjectID device = FindDevice();
     if (device == kAudioObjectUnknown) {
         std::fputs("FAIL: experimental device not found\n", stderr);
@@ -209,7 +244,12 @@ int main()
         std::fputs("FAIL: unexpected channel or rate inventory\n", stderr);
         return 1;
     }
-    if (!ExerciseIO(device, 44100.0) || !ExerciseIO(device, 48000.0)) {
+    if (requestedRate != 0) {
+        if (!ExerciseIO(device, requestedRate, durationSeconds)) {
+            return 1;
+        }
+    } else if (!ExerciseIO(device, 44100.0, durationSeconds) ||
+        !ExerciseIO(device, 48000.0, durationSeconds)) {
         return 1;
     }
 

@@ -4,7 +4,9 @@
 #include <CoreFoundation/CoreFoundation.h>
 
 #include <cstdio>
+#include <cstdlib>
 #include <cstring>
+#include <sys/mman.h>
 
 namespace {
 
@@ -22,6 +24,12 @@ int main(int argc, char** argv)
 {
     if (argc != 2) {
         return Fail("expected path to experimental .driver bundle");
+    }
+
+    constexpr const char* testSharedMemoryName = "/ntm_factory_test";
+    shm_unlink(testSharedMemoryName);
+    if (setenv("TWITCH_AUDIO_SHARED_MEMORY_NAME", testSharedMemoryName, 1) != 0) {
+        return Fail("could not isolate factory-test shared memory");
     }
 
     const auto* pathBytes = reinterpret_cast<const UInt8*>(argv[1]);
@@ -75,6 +83,9 @@ int main(int argc, char** argv)
 
     // The factory owns process-lifetime C++ statics whose destructors reside in
     // the bundle, so deliberately leave the bundle loaded until process exit.
+    // Unlink only the isolated test name; never touch an installed plug-in's
+    // default shared-memory channel during an ordinary build.
+    shm_unlink(testSharedMemoryName);
     std::puts("PASS: bundle identity, load, entry point, and type filtering");
     return 0;
 }

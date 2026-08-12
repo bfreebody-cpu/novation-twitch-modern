@@ -8,11 +8,14 @@
 #include <aspl/Plugin.hpp>
 #include <aspl/Stream.hpp>
 
+#include "SharedAudioRing.hpp"
+
 #include <CoreAudio/AudioServerPlugIn.h>
 #include <CoreFoundation/CoreFoundation.h>
 #include <os/log.h>
 
 #include <atomic>
+#include <cstdlib>
 #include <memory>
 #include <vector>
 
@@ -48,6 +51,8 @@ std::vector<AudioStreamRangedDescription> AvailableFormats()
     }
     return formats;
 }
+
+class SharedMemoryHandler;
 
 class ExperimentalOutputStream final : public aspl::Stream
 {
@@ -91,67 +96,135 @@ public:
         outputStream_ = stream;
     }
 
+    void SetSharedMemoryHandler(
+        const std::shared_ptr<SharedMemoryHandler>& handler)
+    {
+        sharedMemoryHandler_ = handler;
+    }
+
     std::vector<AudioValueRange> GetAvailableSampleRates() const override
     {
         return {{44100.0, 44100.0}, {48000.0, 48000.0}};
     }
 
 protected:
-    OSStatus SetNominalSampleRateImpl(Float64 rate) override
-    {
-        if (rate != 44100.0 && rate != 48000.0) {
-            return kAudioHardwareUnsupportedOperationError;
-        }
-
-        const OSStatus status = aspl::Device::SetNominalSampleRateImpl(rate);
-        if (status == kAudioHardwareNoError) {
-            if (const auto stream = outputStream_.lock()) {
-                stream->ApplySampleRate(rate);
-            }
-        }
-        return status;
-    }
+    OSStatus SetNominalSampleRateImpl(Float64 rate) override;
 
 private:
     std::weak_ptr<ExperimentalOutputStream> outputStream_;
+    std::weak_ptr<SharedMemoryHandler> sharedMemoryHandler_;
 };
 
-class DiscardHandler final : public aspl::ControlRequestHandler,
-                             public aspl::IORequestHandler
+class SharedMemoryHandler final : public aspl::ControlRequestHandler,
+                                  public aspl::IORequestHandler
 {
 public:
+    SharedMemoryHandler()
+    {
+        const char* overrideName =
+            std::getenv("TWITCH_AUDIO_SHARED_MEMORY_NAME");
+        const std::string name = overrideName != nullptr
+            ? overrideName
+            : twitch::audio::kDefaultSharedMemoryName;
+        auto [ring, result] = twitch::audio::SharedAudioRing::Open(name);
+        ring_ = std::move(ring);
+        if (!result) {
+            os_log_error(OS_LOG_DEFAULT,
+                "Twitch HAL shared memory unavailable: %{public}s errno=%d",
+                result.message.c_str(), result.systemError);
+        } else {
+            os_log(OS_LOG_DEFAULT,
+                "Twitch HAL shared memory %{public}s: name=%{public}s "
+                "version=%u capacity=%u",
+                result.disposition == twitch::audio::OpenDisposition::Created
+                    ? "created"
+                    : "opened",
+                name.c_str(),
+                twitch::audio::kSharedAudioVersion,
+                twitch::audio::kRingCapacityFrames);
+        }
+    }
+
+    ~SharedMemoryHandler() override
+    {
+        if (ring_ && active_.exchange(false, std::memory_order_acq_rel)) {
+            ring_->ProducerStop();
+        }
+    }
+
     OSStatus OnStartIO() override
     {
         startCount_.fetch_add(1, std::memory_order_relaxed);
+        if (ring_ && !active_.exchange(true, std::memory_order_acq_rel)) {
+            ring_->ProducerStart(sampleRate_.load(std::memory_order_relaxed));
+        }
         os_log(OS_LOG_DEFAULT,
-            "Twitch HAL probe StartIO: starts=%{public}llu",
-            startCount_.load(std::memory_order_relaxed));
+            "Twitch HAL bridge StartIO: starts=%{public}llu rate=%u",
+            startCount_.load(std::memory_order_relaxed),
+            sampleRate_.load(std::memory_order_relaxed));
         return kAudioHardwareNoError;
     }
 
     void OnStopIO() override
     {
+        if (ring_ && active_.exchange(false, std::memory_order_acq_rel)) {
+            ring_->ProducerStop();
+        }
         os_log(OS_LOG_DEFAULT,
-            "Twitch HAL probe StopIO: callbacks=%{public}llu bytes=%{public}llu",
+            "Twitch HAL bridge StopIO: callbacks=%{public}llu bytes=%{public}llu",
             callbackCount_.load(std::memory_order_relaxed),
             byteCount_.load(std::memory_order_relaxed));
     }
 
     void OnWriteMixedOutput(const std::shared_ptr<aspl::Stream>&,
         Float64,
-        Float64,
-        const void*,
+        Float64 sampleTime,
+        const void* bytes,
         UInt32 byteCount) override
     {
         callbackCount_.fetch_add(1, std::memory_order_relaxed);
         byteCount_.fetch_add(byteCount, std::memory_order_relaxed);
+        constexpr UInt32 bytesPerFrame = kChannelCount * sizeof(Float32);
+        if (ring_ && bytes != nullptr && byteCount % bytesPerFrame == 0) {
+            ring_->TryWrite(static_cast<const float*>(bytes),
+                byteCount / bytesPerFrame, sampleTime);
+        }
+    }
+
+    void SetSampleRate(UInt32 sampleRate) noexcept
+    {
+        sampleRate_.store(sampleRate, std::memory_order_relaxed);
+        if (ring_) {
+            ring_->SetSampleRate(sampleRate);
+        }
     }
 
 private:
+    std::unique_ptr<twitch::audio::SharedAudioRing> ring_;
+    std::atomic<bool> active_ {false};
+    std::atomic<UInt32> sampleRate_ {static_cast<UInt32>(kInitialSampleRate)};
     std::atomic<UInt64> startCount_ {0};
     std::atomic<UInt64> callbackCount_ {0};
     std::atomic<UInt64> byteCount_ {0};
 };
+
+OSStatus ExperimentalDevice::SetNominalSampleRateImpl(Float64 rate)
+{
+    if (rate != 44100.0 && rate != 48000.0) {
+        return kAudioHardwareUnsupportedOperationError;
+    }
+
+    const OSStatus status = aspl::Device::SetNominalSampleRateImpl(rate);
+    if (status == kAudioHardwareNoError) {
+        if (const auto stream = outputStream_.lock()) {
+            stream->ApplySampleRate(rate);
+        }
+        if (const auto handler = sharedMemoryHandler_.lock()) {
+            handler->SetSampleRate(static_cast<UInt32>(rate));
+        }
+    }
+    return status;
+}
 
 std::shared_ptr<aspl::Driver> CreateDriver()
 {
@@ -179,7 +252,8 @@ std::shared_ptr<aspl::Driver> CreateDriver()
     device->SetOutputStream(stream);
     device->AddStreamAsync(stream);
 
-    auto handler = std::make_shared<DiscardHandler>();
+    auto handler = std::make_shared<SharedMemoryHandler>();
+    device->SetSharedMemoryHandler(handler);
     device->SetControlHandler(handler);
     device->SetIOHandler(handler);
 

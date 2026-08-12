@@ -3,6 +3,8 @@ set -eu
 
 expected_id="com.twitchmodern.NovationTwitchModernAudioExperimental"
 install_path="/Library/Audio/Plug-Ins/HAL/NovationTwitchModernAudioExperimental.driver"
+repo_dir=$(CDPATH= cd -- "$(dirname -- "$0")/../.." && pwd)
+cleanup_helper="$repo_dir/.build/audio-hal-probe/TwitchAudioDiscardHelper"
 
 if [ "$(id -u)" -ne 0 ]; then
     echo "Administrator authorization is required." >&2
@@ -12,16 +14,21 @@ fi
 
 if [ ! -e "$install_path" ]; then
     echo "Nothing installed at: $install_path"
-    exit 0
+else
+    actual_id=$(/usr/libexec/PlistBuddy -c 'Print :CFBundleIdentifier' \
+        "$install_path/Contents/Info.plist")
+    test "$actual_id" = "$expected_id" || {
+        echo "Refusing to remove unexpected bundle identifier: $actual_id" >&2
+        exit 1
+    }
+
+    echo "Removing exactly: $install_path"
+    rm -rf -- "$install_path"
 fi
 
-actual_id=$(/usr/libexec/PlistBuddy -c 'Print :CFBundleIdentifier' \
-    "$install_path/Contents/Info.plist")
-test "$actual_id" = "$expected_id" || {
-    echo "Refusing to remove unexpected bundle identifier: $actual_id" >&2
-    exit 1
-}
-
-echo "Removing exactly: $install_path"
-rm -rf -- "$install_path"
+if [ -x "$cleanup_helper" ]; then
+    "$cleanup_helper" --cleanup
+else
+    echo "Shared-memory cleanup helper is unavailable; reboot clears runtime state."
+fi
 echo "Removed experimental HAL probe. Reboot normally to complete removal."

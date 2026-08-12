@@ -1,6 +1,6 @@
 cmake_minimum_required(VERSION 3.24)
 
-project(NovationTwitchModernAudioExperimental VERSION 0.1.0 LANGUAGES CXX)
+project(NovationTwitchModernAudioExperimental VERSION 0.2.0 LANGUAGES CXX)
 
 set(CMAKE_CXX_STANDARD 17)
 set(CMAKE_CXX_STANDARD_REQUIRED ON)
@@ -34,8 +34,12 @@ set(DRIVER_IDENTIFIER com.twitchmodern.NovationTwitchModernAudioExperimental)
 set(DRIVER_UID 2353DB3F-EC93-48E7-B926-F2988B45F5EB)
 set(DRIVER_ENTRYPOINT NovationTwitchModernAudioExperimental_Create)
 
+add_library(TwitchSharedAudio STATIC ../shared/SharedAudioRing.cpp)
+target_include_directories(TwitchSharedAudio PUBLIC ../shared)
+target_compile_options(TwitchSharedAudio PRIVATE -Wall -Wextra -Werror)
+
 add_library(${DRIVER_NAME} MODULE Driver.cpp)
-target_link_libraries(${DRIVER_NAME} PRIVATE libASPL)
+target_link_libraries(${DRIVER_NAME} PRIVATE libASPL TwitchSharedAudio)
 target_compile_options(${DRIVER_NAME} PRIVATE
   -Wall
   -Wextra
@@ -102,3 +106,18 @@ target_link_libraries(HalLiveProbe PRIVATE
   ${CORE_FOUNDATION_FRAMEWORK}
   ${CORE_AUDIO_FRAMEWORK}
 )
+
+add_executable(TwitchAudioDiscardHelper ../usb-bridge/DiscardHelper.cpp)
+target_link_libraries(TwitchAudioDiscardHelper PRIVATE TwitchSharedAudio)
+target_compile_options(TwitchAudioDiscardHelper PRIVATE -Wall -Wextra -Werror)
+
+add_executable(SharedAudioRingTests ../tests/SharedAudioRingTests.cpp)
+target_link_libraries(SharedAudioRingTests PRIVATE TwitchSharedAudio)
+target_compile_options(SharedAudioRingTests PRIVATE -Wall -Wextra -Werror)
+add_test(NAME SharedAudioRingTests COMMAND SharedAudioRingTests)
+
+add_executable(SharedAudioSyntheticProducer
+  ../tests/SharedAudioSyntheticProducer.cpp)
+target_link_libraries(SharedAudioSyntheticProducer PRIVATE TwitchSharedAudio)
+target_compile_options(SharedAudioSyntheticProducer PRIVATE
+  -Wall -Wextra -Werror)
