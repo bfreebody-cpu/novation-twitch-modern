@@ -3,8 +3,6 @@ set -eu
 
 expected_id="com.twitchmodern.NovationTwitchModernAudioExperimental"
 install_path="/Library/Audio/Plug-Ins/HAL/NovationTwitchModernAudioExperimental.driver"
-repo_dir=$(CDPATH= cd -- "$(dirname -- "$0")/../.." && pwd)
-cleanup_helper="$repo_dir/.build/audio-hal-probe/TwitchAudioDiscardHelper"
 
 if [ "$(id -u)" -ne 0 ]; then
     echo "Administrator authorization is required." >&2
@@ -26,9 +24,6 @@ else
     rm -rf -- "$install_path"
 fi
 
-if [ -x "$cleanup_helper" ]; then
-    "$cleanup_helper" --cleanup
-else
-    echo "Shared-memory cleanup helper is unavailable; reboot clears runtime state."
-fi
+echo "The required reboot clears the Phase 2 shared-memory runtime state."
+echo "The root uninstaller deliberately does not execute build-tree helpers."
 echo "Removed experimental HAL probe. Reboot normally to complete removal."

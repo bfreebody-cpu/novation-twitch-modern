@@ -48,9 +48,13 @@ settings.
 - Resolves only the exact path above.
 - Refuses removal unless the installed bundle identifier exactly matches.
 - Removes the one project-owned bundle.
-- Removes the exact `/ntm_audio_v1` name when the locally built cleanup helper is
-  available; existing process mappings remain valid until those processes stop.
 - Requires a normal reboot so Core Audio unloads the removed plug-in.
+
+The privileged uninstaller deliberately does not execute a user-writable helper
+from the build tree. The reboot destroys the runtime shared-memory mapping. A
+developer may explicitly run `TwitchAudioDiscardHelper --cleanup` without
+`sudo` during bounded testing; existing mappings remain valid until their
+processes stop.
 
 If validation fails, the script stops and asks for manual inspection. It does
 not broaden the deletion target.

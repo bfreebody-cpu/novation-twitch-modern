@@ -63,8 +63,18 @@ An abrupt helper-termination/restart test passed while the producer continued:
 - high-water mark was 53,760 of 65,536 frames;
 - zero overrun, dropped-frame, pattern, or non-finite-sample errors.
 
-The required bounded 30-minute synthetic run is currently in progress. Its
-final counters will be added here after completion.
+The bounded 30-minute 48 kHz synthetic run completed successfully:
+
+- 168,750 producer callbacks;
+- 86,400,000 frames produced and consumed exactly;
+- 2,048-frame maximum fill (3.125% of capacity);
+- zero dropped frames, overruns, underruns, pattern errors, non-finite samples,
+  or residual fill;
+- 13 synthetic producer deadlines observed late (0.0077%); none caused data
+  loss or unexplained buffer growth;
+- sampled helper CPU 1.1-1.7% and producer CPU 0.2-0.4%;
+- sampled resident memory approximately 2.5 MB per process;
+- normal producer and consumer stop with both active flags cleared.
 
 Existing controller and audio regressions remain green:
 
@@ -92,13 +102,12 @@ by a retry.
 
 ## Remaining Gate 2 evidence
 
-- final 30-minute USB-independent synthetic result;
 - installed HAL producer to independently running helper delivery;
 - both Core Audio sample rates through the installed plug-in;
 - helper-before-HAL and HAL-before-helper behavior in the actual Core Audio host;
 - helper exit/restart during actual Core Audio output;
 - bounded 30-minute Core Audio run with CPU and frame-accounting evidence;
-- post-test uninstall/reboot verification;
+- post-test uninstall/reboot verification.
 
 No administrator action has been requested and the updated plug-in has not been
 installed. Gate 1's prior bundle remains uninstalled.
