@@ -35,6 +35,7 @@ all later Twitch transport behavior.
 ## DJM-T1 driver
 
 - Upstream: https://github.com/yuki-ama/djm-t1-driver
+- Inspected commit: `90c09d72bd6f6b5cbe218fe73e4b76f31cfd9061`
 - License: MIT (repository); third-party components retain their own licenses
 - Purpose: architecture precedent only for a USB helper, shared-memory ring, and
   AudioServerPlugIn split used with discontinued DJ hardware

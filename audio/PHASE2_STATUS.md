@@ -109,5 +109,45 @@ by a retry.
 - bounded 30-minute Core Audio run with CPU and frame-accounting evidence;
 - post-test uninstall/reboot verification.
 
-No administrator action has been requested and the updated plug-in has not been
-installed. Gate 1's prior bundle remains uninstalled.
+## First installed attempt and blocker
+
+The version 0.2.0 Phase 2 bundle was installed and loaded after a normal reboot
+with SIP unchanged. Measured after reboot:
+
+- exact bundle identifier and ad-hoc signature validated;
+- Core Audio loaded the driver as `_coreaudiod` (UID/GID 202);
+- the virtual device published four outputs at the current 48 kHz rate;
+- no helper was already running and no related crash report was present.
+
+The first logged-in-user helper attachment stopped immediately with:
+
+```text
+shared-memory open failed: Permission denied (errno=13)
+```
+
+This is an established cross-UID permission failure, not an audio, ring, or USB
+failure. The plug-in created `/ntm_audio_v1` with mode `0600` as `_coreaudiod`;
+the helper ran as UID 501/GID 20. The two identities have no suitably private
+common group.
+
+No helper was run as root, no permission was changed, no Core Audio stream was
+started, and no USB device was accessed.
+
+## IPC correction decision
+
+Do not change the mapping to mode `0666`. The pinned DJM-T1 precedent uses a
+root launch daemon and requests a world-readable/writable POSIX object, but that
+would let unrelated local processes alter future physical-output samples or
+ring state.
+
+The current macOS 26.5 SDK `AudioServerPlugIn.h` explicitly supports plug-in
+communication with declared Mach services through the
+`AudioServerPlugIn_MachServices` Info.plist key. The public XPC API supports
+passing shared-memory objects with `xpc_shmem_create()` and
+`xpc_shmem_map()`. Phase 2 will therefore replace name/permission-based
+cross-UID attachment with an XPC-mediated shared-memory handoff before another
+installation attempt.
+
+This changes the Phase 2 installation footprint and lifecycle contract, so the
+0.2.0 plug-in must be uninstalled and the Mac rebooted before implementation or
+testing continues. Gate 2 remains open.

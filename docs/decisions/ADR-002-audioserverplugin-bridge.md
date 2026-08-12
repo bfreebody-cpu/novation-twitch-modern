@@ -56,6 +56,22 @@ and consumer-generation token permit recovery from an abruptly terminated
 helper without allowing a resumed old process to advance the shared read index.
 The exact ABI and lifecycle rules are documented in `audio/shared/README.md`.
 
+### Phase 2 IPC correction
+
+The first installed Phase 2 attempt established that a POSIX shared-memory name
+created mode `0600` by the `_coreaudiod` plug-in cannot be opened by the
+logged-in-user helper. Making the object world writable would weaken the audio
+integrity boundary and is rejected.
+
+Use the mechanism identified by the current macOS SDK instead: declare the
+helper's Mach service in `AudioServerPlugIn_MachServices`, use XPC for the
+connection and lifecycle plane, and transfer the bounded audio mapping as an
+XPC shared-memory object. File ownership and a globally writable POSIX name
+must not be used as the cross-UID authorization mechanism.
+
+The service packaging, runtime identity, installation payload and uninstall
+behavior must be explicitly reviewed before installing this revised design.
+
 ## Isolation
 
 - Stable controller code remains on `main`.

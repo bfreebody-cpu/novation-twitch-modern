@@ -9,6 +9,12 @@ shared-memory object:
 
 This is still USB-independent. The helper consumes and discards frames.
 
+> **Installed cross-UID limitation:** this named-object mechanism is retained as
+> a deterministic test transport only. The installed 0.2.0 attempt proved that
+> `_coreaudiod` mode-`0600` ownership prevents the logged-in helper from opening
+> it. The production-facing Phase 2 revision will transfer an anonymous mapping
+> over a declared XPC Mach service. Do not make this object world writable.
+
 ## Format and capacity
 
 - ABI version: 1
