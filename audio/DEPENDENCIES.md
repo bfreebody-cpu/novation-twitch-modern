@@ -43,3 +43,25 @@ all later Twitch transport behavior.
 
 No DJM-T1 packet sizes, USB commands, retry behavior, latency declarations, or
 device-specific source are to be copied into the Twitch implementation.
+
+## System-broker API authority
+
+The B0 broker architecture in
+[`BROKER_RESEARCH_STATUS.md`](BROKER_RESEARCH_STATUS.md) relies on platform APIs
+and contracts rather than an additional third-party dependency:
+
+- Apple QA1811, `AudioServerPlugIn_MachServices` behavior:
+  https://developer.apple.com/library/archive/qa/qa1811/
+- Apple XPC API documentation, including Mach-service connections, peer
+  requirements, anonymous endpoints, and shared-memory objects:
+  https://developer.apple.com/documentation/xpc
+- Apple TN3127, code-signing requirement construction and the limitations of
+  ad-hoc identities:
+  https://developer.apple.com/documentation/technotes/tn3127-inside-code-signing-requirements
+- Apple `SMAppService`, current app-managed LaunchDaemon registration and
+  notarization contract:
+  https://developer.apple.com/documentation/servicemanagement/smappservice
+- macOS 26.5 SDK headers and the `launchctl(1)` / `launchd.plist(5)` manual
+  pages installed with Xcode 26.6 and macOS 26.5.2.
+
+No Apple sample source or third-party broker code was copied during B0.

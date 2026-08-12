@@ -146,3 +146,8 @@ breaks the stable controller path.
 
 The Phase 2 GUI-LaunchAgent lookup failure triggered this reassessment. No USB
 integration is authorized on that topology.
+
+The proposed replacement namespace architecture and its stricter security
+gates are recorded in
+[`ADR-003-system-xpc-broker.md`](ADR-003-system-xpc-broker.md). ADR-003 does not
+change the measured Phase 2 result or authorize installation.

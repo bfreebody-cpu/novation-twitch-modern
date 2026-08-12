@@ -275,3 +275,9 @@ after login. This was quicker than the later post-login HID negotiation observed
 on the installed reboot. A single installed/uninstalled pair cannot establish
 causation, particularly because the LaunchAgent never ran; the earlier keyboard
 delay remains a correlated observation rather than an established plug-in defect.
+
+The separately reviewed follow-on is documented in
+[`docs/decisions/ADR-003-system-xpc-broker.md`](../docs/decisions/ADR-003-system-xpc-broker.md)
+and [`audio/BROKER_RESEARCH_STATUS.md`](BROKER_RESEARCH_STATUS.md). It proposes
+only a bounded, USB-independent feasibility test; it does not reopen this
+rejected GUI-LaunchAgent topology.
