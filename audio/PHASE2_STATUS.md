@@ -244,3 +244,34 @@ root LaunchDaemon or weaken shared-memory permissions without a new, explicit
 security and lifecycle architecture review. The installed experimental payloads
 should be removed in the documented user-then-root order and followed by a
 normal reboot.
+
+## Uninstall and clean-baseline result
+
+The experiment was removed in the documented order:
+
+1. the logged-in-user uninstaller unregistered the exact launchd label and
+   removed the validated LaunchAgent plist;
+2. the administrator-authorized uninstaller validated and removed the exact HAL
+   bundle;
+3. a normal reboot unloaded the already-resident Core Audio driver host.
+
+Post-reboot inspection confirmed:
+
+- HAL bundle absent;
+- user LaunchAgent plist absent;
+- launchd service absent;
+- XPC helper process absent;
+- experimental Core Audio driver-host process absent;
+- experimental virtual audio device absent;
+- no related recent crash report;
+- stable `main` and the experimental worktree clean.
+
+The two bridge log files were preserved as evidence and are both zero bytes,
+consistent with the measured zero LaunchAgent runs.
+
+On this clean reboot, Bluetooth logs show the Logitech Wave Keys 670 becoming
+ready at `16:46:09` and completing initial HID setup around `16:46:10`, shortly
+after login. This was quicker than the later post-login HID negotiation observed
+on the installed reboot. A single installed/uninstalled pair cannot establish
+causation, particularly because the LaunchAgent never ran; the earlier keyboard
+delay remains a correlated observation rather than an established plug-in defect.
