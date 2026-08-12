@@ -16,6 +16,16 @@ an audio device driver” sample. Apple's copyright and permissive permission
 notice is retained at `A3/NovationTwitchModernAudio/LICENSE.txt` and in adapted
 source headers. That notice governs Apple-originated sample portions.
 
+## Experimental AudioServerPlugIn research
+
+The experimental HAL feasibility probe uses libASPL at commit
+`633e0f70203edd87d320fc5a3cae901e1363aac5`. libASPL is copyright Victor
+Gaydov and contributors and is distributed under the MIT License. Exact
+provenance and its role are recorded in `audio/DEPENDENCIES.md`.
+
+Apple's “Creating an Audio Server Driver Plug-in” sample was inspected as the
+current API and behavioral authority. No sample source is copied into the probe.
+
 ## Linux kernel source
 
 Linux USB-audio source at commit

@@ -44,3 +44,24 @@ cancellation, alt-0 restoration, and the physical low-level safety procedure.
 Keep changes focused, add regression coverage, run all deterministic checks, and
 describe any physical-device testing precisely. Avoid checking in generated
 build products or full raw captures; attach a redacted summary instead.
+
+## Branch and integration workflow
+
+The `main` branch is the stable public release and integration branch. An active
+repository ruleset protects it.
+
+- Do not push commits directly to `main`.
+- Do not force-push, delete, or attempt to bypass protection on `main`.
+- Develop on a clearly named feature, fix, documentation, or research branch.
+- Preserve meaningful milestone and checkpoint commits on the working branch
+  when they help reviewers understand or recover the work.
+- When the work is ready, push the branch and open a pull request targeting
+  `main`.
+- Resolve all pull-request conversations before integration. External approval
+  is not currently required, but review discussion must not be left unresolved.
+- This repository uses squash merging. The pull request should therefore have a
+  clear title and final description suitable for the resulting integration
+  commit.
+
+Changes to repository protection rules are outside the contribution workflow.
+Do not weaken, disable, or work around them to land a change.

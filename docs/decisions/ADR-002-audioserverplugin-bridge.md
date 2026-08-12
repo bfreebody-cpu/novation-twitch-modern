@@ -1,0 +1,153 @@
+# ADR-002: Evaluate an AudioServerPlugIn and IOUSBHost audio bridge
+
+- Status: experimental, accepted for bounded feasibility testing
+- Date: 2026-08-12
+- Tracking issue: https://github.com/bfreebody-cpu/novation-twitch-modern/issues/5
+- Supersedes: nothing
+
+## Context
+
+The stable controller release uses IOUSBHost and Core MIDI without legacy
+Novation software. The separate AudioDriverKit prototype cannot be installed
+with the current Personal Team because its AudioDriverKit and USBDriverKit
+capabilities require Apple-approved entitlements.
+
+The Twitch audio transport itself is no longer speculative. Repository evidence
+establishes four-channel packed-24 playback on interface 0 endpoint `0x01` at
+44.1 and 48 kHz, including sustained scheduling and the physical MASTER/CUE
+channel map. What remains is a Core Audio-facing device implementation.
+
+Apple continues to document AudioServerPlugIn drivers. An AudioServerPlugIn can
+publish a HAL device while a separate process owns the USB interface and exchanges
+samples through a versioned shared-memory ring. The recent open-source DJM-T1
+driver demonstrates this overall shape on Apple Silicon, although none of its
+device-specific USB behavior is applicable to Twitch.
+
+## Decision
+
+Evaluate this architecture in strictly gated stages:
+
+```text
+Core Audio HAL
+    -> AudioServerPlugIn
+    -> versioned shared-memory ring
+    -> IOUSBHost helper
+    -> Twitch interface 0 / endpoint 0x01
+```
+
+The first feasibility probe is USB-independent. It publishes an experimental
+four-output virtual device, advertises 44.1 and 48 kHz, and discards received
+samples. It neither discovers nor opens the Twitch.
+
+The probe will use libASPL at the exact commit recorded in
+`audio/DEPENDENCIES.md`. This keeps project-specific HAL code small while using
+an MIT-licensed implementation of AudioServerPlugIn boilerplate. Apple's current
+minimal NullAudio sample remains the API and behavior authority.
+
+Phase 2 extends the accepted probe with an ABI-versioned, bounded
+single-producer/single-consumer shared-memory ring. The HAL callback remains
+fail-open: it publishes frames with lock-free atomics and bounded memory copies,
+drops complete callbacks when full, and never waits for the helper. The helper
+discards samples. For the corrected cross-UID design it is embedded in the
+root-owned HAL bundle and advertised by an on-demand user LaunchAgent; it is
+neither privileged nor configured with `KeepAlive`.
+
+Stale frames are discarded whenever a helper attaches. A monotonic heartbeat
+and consumer-generation token permit recovery from an abruptly terminated
+helper without allowing a resumed old process to advance the shared read index.
+The exact ABI and lifecycle rules are documented in `audio/shared/README.md`.
+
+### Phase 2 IPC correction
+
+The first installed Phase 2 attempt established that a POSIX shared-memory name
+created mode `0600` by the `_coreaudiod` plug-in cannot be opened by the
+logged-in-user helper. Making the object world writable would weaken the audio
+integrity boundary and is rejected.
+
+Use the mechanism identified by the current macOS SDK instead: declare the
+helper's Mach service in `AudioServerPlugIn_MachServices`, use XPC for the
+connection and lifecycle plane, and transfer the bounded audio mapping as an
+XPC shared-memory object. File ownership and a globally writable POSIX name
+must not be used as the cross-UID authorization mechanism.
+
+The service runs as the logged-in user, allocates the anonymous mapping, and
+accepts only `_coreaudiod` as its mapping peer. Its exact installation and
+uninstall behavior is specified in `audio/INSTALLATION_CONTRACT.md`.
+
+### Measured bootstrap-domain limitation
+
+The corrected 0.3.0 build proved anonymous XPC shared-memory transfer locally,
+but failed after installation. macOS honored the plug-in's declared Mach-service
+sandbox extension, then resolved its connection from the system bootstrap domain.
+The service registered only in the user's `gui/501` domain was not visible;
+launchd returned `No such process`, and the LaunchAgent recorded zero launches.
+
+Therefore the user-LaunchAgent form of this architecture is rejected on the
+tested macOS 26.5.2 system. The project will not silently convert it to a root
+LaunchDaemon or a world-writable POSIX mapping. Either choice requires a new ADR
+covering trust, lifecycle, installation, multi-user behavior, and source-build
+usability before implementation or installation.
+
+## Isolation
+
+- Stable controller code remains on `main`.
+- Work occurs on `experiment/audio-hal-bridge` in a separate worktree.
+- Experimental implementation lives under `audio/` and `scripts/audio/`.
+- The existing `A3/` AudioDriverKit scaffold remains intact as an alternative.
+- Phases 1 and 2 make no USB calls and do not access the Twitch.
+- No experimental audio code is merged until the gates in Issue #5 are met.
+
+## Installation boundary
+
+Phase 1 may build and ad-hoc sign a bundle without privilege. Installation is a
+separate, explicit operation requiring administrator authorization because its
+only system payload is:
+
+```text
+/Library/Audio/Plug-Ins/HAL/NovationTwitchModernAudioExperimental.driver
+```
+
+The corrected Phase 2 probe adds one user LaunchAgent plist for the on-demand
+unprivileged bridge. It installs no daemon, privileged helper, kernel extension,
+Driver Extension, receipt, or legacy component. Uninstall first removes that
+validated user plist, then removes only the exact HAL bundle after verifying its
+bundle identifier. A normal reboot completes both transitions. See
+`audio/INSTALLATION_CONTRACT.md`.
+
+## Security boundary
+
+The experiment must not require or instruct users to disable SIP, enable Reduced
+Security, use DriverKit developer mode, install the historical Novation driver,
+or execute legacy binaries. Failure to load under normal macOS security is a Gate
+1 failure to document, not a reason to weaken the system.
+
+## Consequences
+
+Positive:
+
+- avoids restricted DriverKit entitlements for the feasibility path;
+- preserves the proven userspace IOUSBHost transport;
+- can potentially be built from source by technically comfortable owners;
+- isolates HAL real-time work from USB scheduling and lifecycle work.
+
+Costs and risks:
+
+- a HAL plug-in and helper introduce IPC, buffering, clock, and lifecycle work;
+- source installation requires administrator authorization;
+- ad-hoc loading behavior on macOS 26 is not yet measured;
+- polished distribution still needs Developer ID signing and notarization;
+- a persistent helper must be justified later and is not part of Phase 1.
+
+## Stop conditions
+
+Stop and reassess if the minimal plug-in cannot load under normal macOS 26
+security, reliable uninstall cannot be provided, or later interface-0 ownership
+breaks the stable controller path.
+
+The Phase 2 GUI-LaunchAgent lookup failure triggered this reassessment. No USB
+integration is authorized on that topology.
+
+The proposed replacement namespace architecture and its stricter security
+gates are recorded in
+[`ADR-003-system-xpc-broker.md`](ADR-003-system-xpc-broker.md). ADR-003 does not
+change the measured Phase 2 result or authorize installation.

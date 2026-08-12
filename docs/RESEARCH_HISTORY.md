@@ -15,6 +15,9 @@ This is the concise public timeline. Detailed contemporaneous records are under
 | A1 | Four-channel packed-24 playback and simultaneous `0x82` input proven at 48 kHz |
 | A1.5 | Sustained 30-minute 48 kHz and 10-minute 44.1 kHz scheduling passed; physical I/O channel map established |
 | A3 | Conversion/ring core and unsigned AudioDriverKit scaffold compile; activation and transport implementation incomplete |
+| HAL Phase 1 | Experimental AudioServerPlugIn loaded under SIP and published a four-output 44.1/48 kHz device |
+| HAL Phase 2 | Anonymous XPC shared memory passed local tests, but the installed Core Audio host could not see a GUI-domain LaunchAgent; topology rejected and cleanly removed |
+| Broker B0 | A minimal non-root system-domain XPC rendezvous design was researched; synthetic B1 is ready, but installation and physical USB remain gated |
 
 ## Measured USB topology
 
