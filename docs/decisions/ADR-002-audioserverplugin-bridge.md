@@ -48,8 +48,9 @@ Phase 2 extends the accepted probe with an ABI-versioned, bounded
 single-producer/single-consumer shared-memory ring. The HAL callback remains
 fail-open: it publishes frames with lock-free atomics and bounded memory copies,
 drops complete callbacks when full, and never waits for the helper. The helper
-is still launched manually from the build tree and discards samples; it is not
-installed or configured as a persistent service.
+discards samples. For the corrected cross-UID design it is embedded in the
+root-owned HAL bundle and advertised by an on-demand user LaunchAgent; it is
+neither privileged nor configured with `KeepAlive`.
 
 Stale frames are discarded whenever a helper attaches. A monotonic heartbeat
 and consumer-generation token permit recovery from an abruptly terminated
@@ -69,8 +70,9 @@ connection and lifecycle plane, and transfer the bounded audio mapping as an
 XPC shared-memory object. File ownership and a globally writable POSIX name
 must not be used as the cross-UID authorization mechanism.
 
-The service packaging, runtime identity, installation payload and uninstall
-behavior must be explicitly reviewed before installing this revised design.
+The service runs as the logged-in user, allocates the anonymous mapping, and
+accepts only `_coreaudiod` as its mapping peer. Its exact installation and
+uninstall behavior is specified in `audio/INSTALLATION_CONTRACT.md`.
 
 ## Isolation
 
@@ -91,10 +93,12 @@ only system payload is:
 /Library/Audio/Plug-Ins/HAL/NovationTwitchModernAudioExperimental.driver
 ```
 
-The initial probe installs no daemon, launch agent, launch daemon, privileged
-helper, kernel extension, Driver Extension, receipt, or configuration file.
-Uninstall removes only that exact bundle after verifying its bundle identifier,
-then restarts Core Audio. See `audio/INSTALLATION_CONTRACT.md`.
+The corrected Phase 2 probe adds one user LaunchAgent plist for the on-demand
+unprivileged bridge. It installs no daemon, privileged helper, kernel extension,
+Driver Extension, receipt, or legacy component. Uninstall first removes that
+validated user plist, then removes only the exact HAL bundle after verifying its
+bundle identifier. A normal reboot completes both transitions. See
+`audio/INSTALLATION_CONTRACT.md`.
 
 ## Security boundary
 

@@ -151,3 +151,47 @@ installation attempt.
 This changes the Phase 2 installation footprint and lifecycle contract, so the
 0.2.0 plug-in must be uninstalled and the Mac rebooted before implementation or
 testing continues. Gate 2 remains open.
+
+## Corrected XPC implementation and local validation
+
+The 0.2.0 bundle was removed through the validated uninstaller and a normal
+reboot confirmed the virtual device, driver process and bundle were absent.
+
+Version 0.3.0 now implements the reviewed correction without USB access:
+
+- a logged-in-user LaunchAgent advertises
+  `com.twitchmodern.NovationTwitchModernAudioExperimental.bridge` on demand;
+- its executable is embedded in the root-owned HAL bundle;
+- the service allocates an anonymous shared mapping and transfers it with
+  `xpc_shmem_create()` / `xpc_shmem_map()`;
+- the installed path accepts only the `_coreaudiod` effective UID;
+- the plug-in declares the service in `AudioServerPlugIn_MachServices` and
+  reconnects at `StartIO` if it was loaded before the user's agent existed;
+- the on-demand helper exits after a completed/drained stream, and a later
+  `StartIO` rejects its stale mapping and reacquires a launchd-restarted service;
+- the real-time mixed-output callback remains XPC-free and lock-free;
+- named POSIX shared memory remains only as an isolated test transport.
+
+Local launchd tests, run wholly as UID 501, established actual two-process Mach
+service discovery and anonymous-memory transfer:
+
+| Rate | Producer frames | Consumer frames | High water | Drops/overruns | Pattern errors |
+|---:|---:|---:|---:|---:|---:|
+| 44,100 | 132,608 | 132,608 | 512 | 0 / 0 | 0 |
+| 48,000 | 144,384 | 144,384 | 512 | 0 / 0 | 0 |
+
+Both tests had zero residual fill and zero non-finite samples. A separate
+negative test configured a deliberately unmatched allowed UID and confirmed the
+service rejected the client. The factory test, ring tests, bundle signature and
+bundle identifier also pass.
+
+The revised installation contract now contains two exact payloads: the HAL
+bundle installed with administrator authorization and one user LaunchAgent
+plist installed without `sudo`. No daemon, root helper, world-writable mapping,
+security-policy change, USB access or legacy execution is introduced.
+
+The remaining immediate uncertainty is whether `_coreaudiod` can discover this
+service in the logged-in GUI bootstrap domain on the tested macOS release. That
+cross-domain lookup cannot be established by the same-UID local harness. The
+next bounded installation exists solely to answer that question before live
+audio or helper-restart work continues.

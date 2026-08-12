@@ -1,6 +1,6 @@
 cmake_minimum_required(VERSION 3.24)
 
-project(NovationTwitchModernAudioExperimental VERSION 0.2.0 LANGUAGES CXX)
+project(NovationTwitchModernAudioExperimental VERSION 0.3.0 LANGUAGES CXX)
 
 set(CMAKE_CXX_STANDARD 17)
 set(CMAKE_CXX_STANDARD_REQUIRED ON)
@@ -38,14 +38,21 @@ add_library(TwitchSharedAudio STATIC ../shared/SharedAudioRing.cpp)
 target_include_directories(TwitchSharedAudio PUBLIC ../shared)
 target_compile_options(TwitchSharedAudio PRIVATE -Wall -Wextra -Werror)
 
+add_library(TwitchXPCClient STATIC ../shared/XPCClient.cpp)
+target_include_directories(TwitchXPCClient PUBLIC ../shared)
+target_link_libraries(TwitchXPCClient PUBLIC TwitchSharedAudio)
+target_compile_options(TwitchXPCClient PRIVATE
+  -Wall -Wextra -Werror -fblocks)
+
 add_library(${DRIVER_NAME} MODULE Driver.cpp)
-target_link_libraries(${DRIVER_NAME} PRIVATE libASPL TwitchSharedAudio)
+target_link_libraries(${DRIVER_NAME} PRIVATE libASPL TwitchSharedAudio TwitchXPCClient)
 target_compile_options(${DRIVER_NAME} PRIVATE
   -Wall
   -Wextra
   # Warnings originate in the pinned libASPL public headers under Xcode 26.
   -Wno-reorder-init-list
   -Wno-unused-parameter
+  -fblocks
 )
 
 set_target_properties(${DRIVER_NAME} PROPERTIES
@@ -72,6 +79,25 @@ add_custom_command(
           "${CMAKE_CURRENT_SOURCE_DIR}/../licenses/libASPL-LICENSE.txt"
           "$<TARGET_BUNDLE_DIR:${DRIVER_NAME}>/Contents/Resources/libASPL-LICENSE.txt"
   COMMENT "Embedding libASPL license notice"
+  VERBATIM
+)
+
+add_executable(TwitchAudioXPCService ../usb-bridge/XPCDiscardService.cpp)
+target_link_libraries(TwitchAudioXPCService PRIVATE
+  TwitchSharedAudio)
+target_compile_options(TwitchAudioXPCService PRIVATE
+  -Wall -Wextra -Werror -fblocks)
+add_dependencies(${DRIVER_NAME} TwitchAudioXPCService)
+add_custom_command(
+  TARGET ${DRIVER_NAME}
+  POST_BUILD
+  COMMAND ${CMAKE_COMMAND} -E copy_if_different
+          "$<TARGET_FILE:TwitchAudioXPCService>"
+          "$<TARGET_BUNDLE_DIR:${DRIVER_NAME}>/Contents/Resources/TwitchAudioXPCService"
+  COMMAND ${CMAKE_COMMAND} -E copy_if_different
+          "${CMAKE_CURRENT_SOURCE_DIR}/../xpc-service/com.twitchmodern.NovationTwitchModernAudioExperimental.bridge.plist"
+          "$<TARGET_BUNDLE_DIR:${DRIVER_NAME}>/Contents/Resources/com.twitchmodern.NovationTwitchModernAudioExperimental.bridge.plist"
+  COMMENT "Embedding the USB-independent XPC bridge service"
   VERBATIM
 )
 
@@ -121,3 +147,32 @@ add_executable(SharedAudioSyntheticProducer
 target_link_libraries(SharedAudioSyntheticProducer PRIVATE TwitchSharedAudio)
 target_compile_options(SharedAudioSyntheticProducer PRIVATE
   -Wall -Wextra -Werror)
+
+add_executable(XPCSyntheticProducer ../tests/XPCSyntheticProducer.cpp)
+target_link_libraries(XPCSyntheticProducer PRIVATE TwitchXPCClient)
+target_compile_options(XPCSyntheticProducer PRIVATE
+  -Wall -Wextra -Werror -fblocks)
+
+execute_process(
+  COMMAND /usr/bin/id -u
+  OUTPUT_VARIABLE XPC_TEST_UID
+  OUTPUT_STRIP_TRAILING_WHITESPACE
+  COMMAND_ERROR_IS_FATAL ANY
+)
+set(XPC_SERVICE_EXECUTABLE "${CMAKE_BINARY_DIR}/TwitchAudioXPCService")
+set(XPC_TEST_STDOUT "${CMAKE_BINARY_DIR}/xpc-service.stdout")
+set(XPC_TEST_STDERR "${CMAKE_BINARY_DIR}/xpc-service.stderr")
+set(XPC_ALLOWED_UID "${XPC_TEST_UID}")
+configure_file(
+  "${CMAKE_CURRENT_SOURCE_DIR}/../xpc-service/local-test.plist.in"
+  "${CMAKE_BINARY_DIR}/xpc-local-test.plist"
+  @ONLY
+)
+set(XPC_ALLOWED_UID "4294967294")
+set(XPC_TEST_STDOUT "${CMAKE_BINARY_DIR}/xpc-rejection.stdout")
+set(XPC_TEST_STDERR "${CMAKE_BINARY_DIR}/xpc-rejection.stderr")
+configure_file(
+  "${CMAKE_CURRENT_SOURCE_DIR}/../xpc-service/local-test.plist.in"
+  "${CMAKE_BINARY_DIR}/xpc-local-rejection-test.plist"
+  @ONLY
+)

@@ -6,9 +6,9 @@ floating-point Core Audio samples at 44.1 or 48 kHz.
 
 In Phase 2, its mixed-output callback writes those frames to the versioned
 single-producer/single-consumer ring documented in `../shared/README.md`. The
-separate `TwitchAudioDiscardHelper` process consumes and discards them. If the
-ring is full or unavailable, the plug-in drops the frames; it never blocks the
-Core Audio real-time thread.
+on-demand `TwitchAudioXPCService` process consumes and discards them. XPC is used
+only to acquire the anonymous mapping outside the real-time callback. If the
+ring is full or unavailable, the callback drops frames and never waits.
 
 The plug-in and helper contain no USB code, never discover or open the Twitch,
 and produce no physical audio output.
@@ -29,6 +29,9 @@ Run a USB-independent two-process test after building:
 scripts/audio/run-shared-audio-test.sh 10 48000
 scripts/audio/run-shared-audio-rate-change-test.sh
 scripts/audio/run-shared-audio-restart-test.sh
+scripts/audio/run-xpc-shared-audio-test.sh 10 48000
+scripts/audio/run-xpc-shared-audio-test.sh 10 44100
+scripts/audio/run-xpc-access-control-test.sh
 ```
 
 The first command uses a deterministic synthetic producer rather than Core

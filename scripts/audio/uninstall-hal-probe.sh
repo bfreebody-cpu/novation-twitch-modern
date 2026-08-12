@@ -25,5 +25,6 @@ else
 fi
 
 echo "The required reboot clears the Phase 2 shared-memory runtime state."
-echo "The root uninstaller deliberately does not execute build-tree helpers."
+echo "The root uninstaller deliberately does not modify any user's LaunchAgents."
+echo "Run scripts/audio/uninstall-xpc-agent.sh without sudo before this script."
 echo "Removed experimental HAL probe. Reboot normally to complete removal."

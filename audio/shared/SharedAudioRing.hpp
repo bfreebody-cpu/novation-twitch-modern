@@ -122,6 +122,11 @@ public:
     static std::pair<std::unique_ptr<SharedAudioRing>, OpenResult> Open(
         const std::string& name = kDefaultSharedMemoryName,
         std::uint32_t expectedVersion = kSharedAudioVersion);
+    static std::pair<std::unique_ptr<SharedAudioRing>, OpenResult>
+    AllocateAnonymous();
+    static std::pair<std::unique_ptr<SharedAudioRing>, OpenResult> Attach(
+        void* memory, std::size_t mappedBytes,
+        std::uint32_t expectedVersion = kSharedAudioVersion);
     static bool Unlink(const std::string& name = kDefaultSharedMemoryName,
         int* systemError = nullptr);
 
@@ -141,14 +146,18 @@ public:
 
     RingSnapshot Snapshot() const noexcept;
     const std::string& Name() const noexcept { return name_; }
+    void* Memory() const noexcept { return memory_; }
+    std::size_t MappedByteCount() const noexcept { return mappedBytes_; }
 
 private:
-    SharedAudioRing(std::string name, int descriptor, SharedAudioMemory* memory);
+    SharedAudioRing(std::string name, int descriptor, SharedAudioMemory* memory,
+        std::size_t mappedBytes);
     void Close() noexcept;
 
     std::string name_;
     int descriptor_ {-1};
     SharedAudioMemory* memory_ {nullptr};
+    std::size_t mappedBytes_ {0};
     std::uint32_t consumerGeneration_ {0};
 };
 

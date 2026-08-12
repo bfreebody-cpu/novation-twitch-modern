@@ -3,7 +3,9 @@
 <plist version="1.0">
 <dict>
   <key>AudioServerPlugIn_MachServices</key>
-  <array/>
+  <array>
+    <string>com.twitchmodern.NovationTwitchModernAudioExperimental.bridge</string>
+  </array>
   <key>CFBundleDevelopmentRegion</key>
   <string>en</string>
   <key>CFBundleExecutable</key>

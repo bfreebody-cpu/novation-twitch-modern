@@ -9,6 +9,7 @@
 #include <aspl/Stream.hpp>
 
 #include "SharedAudioRing.hpp"
+#include "XPCClient.hpp"
 
 #include <CoreAudio/AudioServerPlugIn.h>
 #include <CoreFoundation/CoreFoundation.h>
@@ -121,25 +122,53 @@ class SharedMemoryHandler final : public aspl::ControlRequestHandler,
 public:
     SharedMemoryHandler()
     {
+        Connect();
+    }
+
+    void Connect()
+    {
+        if (ring_) {
+            const auto snapshot = ring_->Snapshot();
+            const auto now = twitch::audio::MonotonicTimeNs();
+            const bool consumerFresh = snapshot.consumerActive != 0 &&
+                now >= snapshot.consumerHeartbeatNs &&
+                now - snapshot.consumerHeartbeatNs < 2000000000ULL;
+            if (consumerFresh) {
+                return;
+            }
+            // The on-demand service exits after a completed stream. Discard
+            // its now-orphaned mapping before the next StartIO acquisition.
+            ring_.reset();
+        }
         const char* overrideName =
             std::getenv("TWITCH_AUDIO_SHARED_MEMORY_NAME");
-        const std::string name = overrideName != nullptr
-            ? overrideName
-            : twitch::audio::kDefaultSharedMemoryName;
-        auto [ring, result] = twitch::audio::SharedAudioRing::Open(name);
-        ring_ = std::move(ring);
-        if (!result) {
+        std::string transport;
+        std::string error;
+        if (overrideName != nullptr) {
+            auto [ring, result] =
+                twitch::audio::SharedAudioRing::Open(overrideName);
+            ring_ = std::move(ring);
+            transport = overrideName;
+            if (!result) {
+                error = result.message;
+            }
+        } else {
+            auto [ring, result] = twitch::audio::ConnectToXPCService();
+            ring_ = std::move(ring);
+            transport = "xpc";
+            if (!result) {
+                error = result.message;
+            }
+        }
+        if (!ring_) {
             os_log_error(OS_LOG_DEFAULT,
-                "Twitch HAL shared memory unavailable: %{public}s errno=%d",
-                result.message.c_str(), result.systemError);
+                "Twitch HAL shared memory unavailable: %{public}s",
+                error.c_str());
         } else {
             os_log(OS_LOG_DEFAULT,
-                "Twitch HAL shared memory %{public}s: name=%{public}s "
+                "Twitch HAL shared memory connected: transport=%{public}s "
                 "version=%u capacity=%u",
-                result.disposition == twitch::audio::OpenDisposition::Created
-                    ? "created"
-                    : "opened",
-                name.c_str(),
+                transport.c_str(),
                 twitch::audio::kSharedAudioVersion,
                 twitch::audio::kRingCapacityFrames);
         }
@@ -155,6 +184,10 @@ public:
     OSStatus OnStartIO() override
     {
         startCount_.fetch_add(1, std::memory_order_relaxed);
+        // coreaudiod may load the plug-in before the logged-in user's
+        // LaunchAgent is registered. Retry only at the non-real-time StartIO
+        // lifecycle boundary; the mixed-output callback never performs IPC.
+        Connect();
         if (ring_ && !active_.exchange(true, std::memory_order_acq_rel)) {
             ring_->ProducerStart(sampleRate_.load(std::memory_order_relaxed));
         }

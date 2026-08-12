@@ -74,10 +74,12 @@ std::uint64_t RingSnapshot::FillFrames() const
 }
 
 SharedAudioRing::SharedAudioRing(
-    std::string name, int descriptor, SharedAudioMemory* memory)
+    std::string name, int descriptor, SharedAudioMemory* memory,
+    std::size_t mappedBytes)
     : name_(std::move(name))
     , descriptor_(descriptor)
     , memory_(memory)
+    , mappedBytes_(mappedBytes)
 {
 }
 
@@ -90,10 +92,12 @@ SharedAudioRing::SharedAudioRing(SharedAudioRing&& other) noexcept
     : name_(std::move(other.name_))
     , descriptor_(other.descriptor_)
     , memory_(other.memory_)
+    , mappedBytes_(other.mappedBytes_)
     , consumerGeneration_(other.consumerGeneration_)
 {
     other.descriptor_ = -1;
     other.memory_ = nullptr;
+    other.mappedBytes_ = 0;
     other.consumerGeneration_ = 0;
 }
 
@@ -104,9 +108,11 @@ SharedAudioRing& SharedAudioRing::operator=(SharedAudioRing&& other) noexcept
         name_ = std::move(other.name_);
         descriptor_ = other.descriptor_;
         memory_ = other.memory_;
+        mappedBytes_ = other.mappedBytes_;
         consumerGeneration_ = other.consumerGeneration_;
         other.descriptor_ = -1;
         other.memory_ = nullptr;
+        other.mappedBytes_ = 0;
         other.consumerGeneration_ = 0;
     }
     return *this;
@@ -212,7 +218,59 @@ std::pair<std::unique_ptr<SharedAudioRing>, OpenResult> SharedAudioRing::Open(
     }
 
     return {std::unique_ptr<SharedAudioRing>(
-                new SharedAudioRing(name, descriptor, memory)),
+                new SharedAudioRing(name, descriptor, memory, mappedBytes)),
+        result};
+}
+
+std::pair<std::unique_ptr<SharedAudioRing>, OpenResult>
+SharedAudioRing::AllocateAnonymous()
+{
+    OpenResult result;
+    result.disposition = OpenDisposition::Created;
+    const auto mappedBytes = MappedBytes();
+    void* address = mmap(nullptr, mappedBytes, PROT_READ | PROT_WRITE,
+        MAP_SHARED | MAP_ANON, -1, 0);
+    if (address == MAP_FAILED) {
+        result.error = OpenError::System;
+        result.systemError = errno;
+        result.message = std::strerror(errno);
+        return {nullptr, result};
+    }
+    auto* memory = static_cast<SharedAudioMemory*>(address);
+    new (memory) SharedAudioMemory {};
+    memory->header.headerBytes = sizeof(SharedAudioHeader);
+    memory->header.totalBytes = static_cast<std::uint32_t>(kMemoryBytes);
+    __atomic_store_n(&memory->header.magic, kSharedAudioMagic, __ATOMIC_RELEASE);
+    return {std::unique_ptr<SharedAudioRing>(new SharedAudioRing(
+                "anonymous-xpc", -1, memory, mappedBytes)),
+        result};
+}
+
+std::pair<std::unique_ptr<SharedAudioRing>, OpenResult> SharedAudioRing::Attach(
+    void* address, std::size_t mappedBytes, std::uint32_t expectedVersion)
+{
+    OpenResult result;
+    if (address == nullptr || mappedBytes != MappedBytes()) {
+        result.error = OpenError::SizeMismatch;
+        result.message = "anonymous shared-memory size mismatch";
+        return {nullptr, result};
+    }
+    auto* memory = static_cast<SharedAudioMemory*>(address);
+    const auto magic =
+        __atomic_load_n(&memory->header.magic, __ATOMIC_ACQUIRE);
+    if (magic != kSharedAudioMagic ||
+        memory->header.version != expectedVersion ||
+        memory->header.headerBytes != sizeof(SharedAudioHeader) ||
+        memory->header.totalBytes != kMemoryBytes ||
+        memory->header.channelCount != kChannelCount ||
+        memory->header.capacityFrames != kRingCapacityFrames) {
+        result.error = OpenError::ProtocolMismatch;
+        result.message =
+            "anonymous shared-memory protocol mismatch; refusing mapping";
+        return {nullptr, result};
+    }
+    return {std::unique_ptr<SharedAudioRing>(new SharedAudioRing(
+                "anonymous-xpc", -1, memory, mappedBytes)),
         result};
 }
 
@@ -430,8 +488,9 @@ RingSnapshot SharedAudioRing::Snapshot() const noexcept
 void SharedAudioRing::Close() noexcept
 {
     if (memory_ != nullptr) {
-        munmap(memory_, MappedBytes());
+        munmap(memory_, mappedBytes_);
         memory_ = nullptr;
+        mappedBytes_ = 0;
     }
     if (descriptor_ >= 0) {
         close(descriptor_);

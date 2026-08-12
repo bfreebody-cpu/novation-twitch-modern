@@ -1,0 +1,29 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN"
+  "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
+<plist version="1.0">
+<dict>
+  <key>Label</key>
+  <string>com.twitchmodern.NovationTwitchModernAudioExperimental.bridge</string>
+  <key>ProgramArguments</key>
+  <array>
+    <string>@XPC_SERVICE_EXECUTABLE@</string>
+    <string>--allow-euid</string>
+    <string>@XPC_ALLOWED_UID@</string>
+    <string>--verify-pattern</string>
+    <string>--report-ms</string>
+    <string>250</string>
+  </array>
+  <key>MachServices</key>
+  <dict>
+    <key>com.twitchmodern.NovationTwitchModernAudioExperimental.bridge</key>
+    <true/>
+  </dict>
+  <key>StandardOutPath</key>
+  <string>@XPC_TEST_STDOUT@</string>
+  <key>StandardErrorPath</key>
+  <string>@XPC_TEST_STDERR@</string>
+  <key>ProcessType</key>
+  <string>Interactive</string>
+</dict>
+</plist>

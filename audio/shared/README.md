@@ -1,19 +1,15 @@
 # Shared audio protocol (experimental ABI v1)
 
-Phase 2 connects the HAL plug-in to an unprivileged helper through one POSIX
-shared-memory object:
-
-```text
-/ntm_audio_v1
-```
+Phase 2 connects the HAL plug-in to an unprivileged helper through one anonymous
+shared-memory mapping transferred over XPC.
 
 This is still USB-independent. The helper consumes and discards frames.
 
-> **Installed cross-UID limitation:** this named-object mechanism is retained as
-> a deterministic test transport only. The installed 0.2.0 attempt proved that
-> `_coreaudiod` mode-`0600` ownership prevents the logged-in helper from opening
-> it. The production-facing Phase 2 revision will transfer an anonymous mapping
-> over a declared XPC Mach service. Do not make this object world writable.
+The earlier POSIX name `/ntm_audio_v1` is retained only for isolated deterministic
+tests. The installed 0.2.0 attempt proved that `_coreaudiod` mode-`0600`
+ownership prevents a logged-in helper from opening it. The installed 0.3.0
+design does not create that name and does not make any audio mapping world
+writable.
 
 ## Format and capacity
 
@@ -49,10 +45,11 @@ overrun/drop counters advance. The HAL thread never waits for the helper.
 
 ## Lifecycle and stale data
 
-Either process may create the mapping first. Exclusive creation selects one
-initializer; a release/acquire magic value publishes the completed header.
-Openers validate magic, ABI version, header size, mapped size, channel count and
-capacity, and refuse mismatches.
+The XPC service allocates and initializes the anonymous mapping before replying
+to the plug-in. The receiver validates magic, ABI version, header size, mapped
+size, channel count and capacity, and refuses mismatches. The service rejects an
+XPC peer whose effective UID is not `_coreaudiod` (tests use an explicit local
+UID override).
 
 Only one consumer generation may read at a time. A second helper refuses to
 start while the current helper heartbeat is fresh. After one second without a
@@ -76,8 +73,12 @@ meaning yet. The underrun counter exists for the future USB adapter and remains
 zero in discard-only operation. Empty helper polls are intentionally not called
 underruns.
 
-The object is runtime state, not an installed daemon or configuration file. The
-test scripts and factory test use isolated names and unlink them on exit;
-ordinary builds never unlink an installed plug-in's default channel. The
-default object is removed by the uninstall workflow; reboot also destroys the
-process mappings.
+The mapping is runtime state, not a file. The installed helper is an on-demand
+user LaunchAgent whose executable remains inside the root-owned HAL bundle. The
+service exits after a producer has stopped and its ring has drained. On a later
+`StartIO`, the plug-in detects the stopped/stale consumer and acquires a fresh
+mapping from the launchd-restarted service. This restart work occurs only at the
+non-real-time lifecycle boundary. The test scripts and factory test continue to
+use isolated POSIX names where useful
+and unlink them on exit; ordinary builds never touch an installed runtime
+channel.

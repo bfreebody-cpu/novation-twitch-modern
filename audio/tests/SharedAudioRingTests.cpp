@@ -2,6 +2,8 @@
 
 #include "SharedAudioRing.hpp"
 
+#include <xpc/xpc.h>
+
 #include <cmath>
 #include <atomic>
 #include <cstdio>
@@ -174,6 +176,48 @@ void VersionMismatch()
     CHECK(invalidResult.error == twitch::audio::OpenError::InvalidName);
 }
 
+void AnonymousXPCMapping()
+{
+    auto [owner, allocation] =
+        twitch::audio::SharedAudioRing::AllocateAnonymous();
+    CHECK(allocation);
+    CHECK(owner);
+    if (!owner) {
+        return;
+    }
+    xpc_object_t shared =
+        xpc_shmem_create(owner->Memory(), owner->MappedByteCount());
+    CHECK(shared != nullptr);
+    if (shared == nullptr) {
+        return;
+    }
+    void* address = nullptr;
+    const auto mappedBytes = xpc_shmem_map(shared, &address);
+    CHECK(address != nullptr);
+    CHECK(mappedBytes == owner->MappedByteCount());
+    if (address == nullptr || mappedBytes == 0) {
+        xpc_release(shared);
+        return;
+    }
+    auto [peer, attach] =
+        twitch::audio::SharedAudioRing::Attach(address, mappedBytes);
+    CHECK(attach);
+    CHECK(peer);
+    if (peer) {
+        CHECK(peer->ConsumerStart());
+        owner->ProducerStart(48000);
+        const auto input = Frames(257, 0.125F);
+        CHECK(owner->TryWrite(input.data(), 257, 88.0));
+        std::vector<float> output(input.size());
+        CHECK(peer->TryRead(output.data(), 257) == 257);
+        CheckEqual(input, output);
+        owner->ProducerStop();
+        peer->ConsumerStop();
+    }
+    peer.reset();
+    xpc_release(shared);
+}
+
 void PluginBeforeHelper()
 {
     const auto name = TestName("producer_first");
@@ -332,6 +376,7 @@ int main()
     BasicAndLifecycle();
     WrapAndOverrun();
     VersionMismatch();
+    AnonymousXPCMapping();
     PluginBeforeHelper();
     ConsumerOwnershipAndStaleTakeover();
     ConcurrentIntegrity();
