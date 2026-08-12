@@ -96,3 +96,9 @@ add_test(
   NAME HalProbeFactoryTest
   COMMAND HalProbeFactoryTest "$<TARGET_BUNDLE_DIR:${DRIVER_NAME}>"
 )
+
+add_executable(HalLiveProbe ../tests/HalLiveProbe.cpp)
+target_link_libraries(HalLiveProbe PRIVATE
+  ${CORE_FOUNDATION_FRAMEWORK}
+  ${CORE_AUDIO_FRAMEWORK}
+)
